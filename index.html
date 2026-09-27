@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Tally Counter</title>
+  <title>App Hub</title>
   <style>
     * {
       box-sizing: border-box;
@@ -15,403 +15,95 @@
     body {
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      width: 100vw;
+      min-height: 100vh;
       background-color: #121212;
       color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      overflow: hidden;
+      padding: 20px;
     }
 
-    /* Fixed Header with Action Buttons */
     header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 12px;
-      background-color: #1e1e1e;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-      z-index: 10;
-      height: 50px;
-      flex-shrink: 0;
+      text-align: center;
+      margin-bottom: 24px;
+      padding-top: 10px;
     }
 
     header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    header p {
+      color: #aaa;
+      font-size: 0.95rem;
+    }
+
+    .app-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 16px;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .app-card {
+      background-color: #1e1e1e;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      text-decoration: none;
+      color: #fff;
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    .app-card:active {
+      transform: scale(0.97);
+      background-color: #282a36;
+    }
+
+    .app-icon {
+      font-size: 2.2rem;
+      margin-bottom: 10px;
+    }
+
+    .app-title {
       font-size: 1rem;
       font-weight: 600;
     }
 
-    .header-actions {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .btn-action {
-      background-color: #333;
-      color: #fff;
-      border: 1px solid #444;
-      padding: 5px 10px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .btn-add {
-      background-color: #007bff;
-      border-color: #007bff;
-    }
-
-    /* Save Dropdown Menu Styling */
-    .dropdown {
-      position: relative;
-      display: inline-block;
-    }
-
-    .dropdown-content {
-      display: none;
-      position: absolute;
-      right: 0;
-      top: 110%;
-      background-color: #252525;
-      min-width: 120px;
-      box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
-      border-radius: 6px;
-      border: 1px solid #3d3d3d;
-      z-index: 20;
-    }
-
-    .dropdown-content button {
-      color: #ffffff;
-      padding: 10px 12px;
-      text-decoration: none;
-      display: block;
-      width: 100%;
-      text-align: left;
-      background: none;
-      border: none;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-    }
-
-    .dropdown-content button:not(:last-child) {
-      border-bottom: 1px solid #333;
-    }
-
-    .dropdown-content button:active {
-      background-color: #007bff;
-    }
-
-    .show {
-      display: block;
-    }
-
-    /* Hidden file input */
-    #file-input {
-      display: none;
-    }
-
-    /* Scrollable Container with Extra Bottom Clearance */
-    #counter-container {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      gap: 8px;
-      padding: 8px 8px calc(70px + env(safe-area-inset-bottom)) 8px;
-      overflow-y: auto;
-    }
-
-    /* Base Counter Card */
-    .counter-card {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 110px;
-      border-radius: 12px;
-      padding: 8px 12px;
-      position: relative;
-    }
-
-    /* Alternating Colors */
-    .counter-card:nth-child(odd) {
-      background-color: #1e1e1e;
-      border: 1px solid #2a2a2a;
-    }
-
-    .counter-card:nth-child(even) {
-      background-color: #282a36;
-      border: 1px solid #343746;
-    }
-
-    /* Header Row with Dual Inputs */
-    .counter-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 2px;
-    }
-
-    .counter-inputs {
-      display: flex;
-      gap: 6px;
-      flex: 1;
-    }
-
-    .counter-title {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 4px;
-      color: #ffffff;
-      font-size: 0.9rem;
-      font-weight: 600;
-      padding: 3px 6px;
-      width: 50%;
-    }
-
-    .counter-title:focus {
-      outline: none;
-      border-color: #007bff;
-      background: rgba(0, 123, 255, 0.1);
-    }
-
-    .btn-delete {
-      background: none;
-      border: none;
-      color: #ff4d4d;
-      font-size: 1.3rem;
-      cursor: pointer;
-      line-height: 1;
-      padding: 2px 6px;
-    }
-
-    /* Body Layout */
-    .counter-body {
-      display: flex;
-      flex: 1;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .count-display {
-      font-size: clamp(2rem, 6vh, 4.5rem);
-      font-weight: bold;
-      text-align: center;
-      flex: 1;
-    }
-
-    .btn-count {
-      border: none;
-      border-radius: 8px;
-      color: white;
-      font-size: 1.4rem;
-      font-weight: bold;
-      height: 75%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .btn-count:active {
-      opacity: 0.7;
-    }
-
-    .btn-minus {
-      background-color: #383838;
-      width: 18%;
-    }
-
-    .btn-plus {
-      background-color: #28a745;
-      width: 35%;
-    }
-
-    .btn-reset {
-      background-color: #444;
-      width: 12%;
-      font-size: 0.9rem;
+    .app-card.disabled {
+      opacity: 0.4;
+      pointer-events: none;
+      border-style: dashed;
     }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>Tally Counter</h1>
-    <div class="header-actions">
-      <!-- Save Dropdown -->
-      <div class="dropdown">
-        <button class="btn-action" onclick="toggleSaveMenu(event)">Save &#9662;</button>
-        <div id="save-menu" class="dropdown-content">
-          <button onclick="exportJSON()">Save as JSON</button>
-          <button onclick="exportCSV()">Export to CSV</button>
-        </div>
-      </div>
-      
-      <button class="btn-action" onclick="document.getElementById('file-input').click()">Load</button>
-      <button class="btn-action btn-add" onclick="addCounter()">Add Tally +</button>
-    </div>
+    <h1>My Web Apps</h1>
+    <p>Select an app to open</p>
   </header>
 
-  <input type="file" id="file-input" accept=".json" onchange="importData(event)" />
+  <main class="app-grid">
+    <!-- Tally App Link -->
+    <a href="tally.html" class="app-card">
+      <div class="app-icon">🔢</div>
+      <div class="app-title">Tally Counter</div>
+    </a>
 
-  <div id="counter-container"></div>
+    <!-- Placeholder for Future App 1 -->
+    <div class="app-card disabled">
+      <div class="app-icon">➕</div>
+      <div class="app-title">Coming Soon</div>
+    </div>
+  </main>
 
-  <script>
-    let counters = JSON.parse(localStorage.getItem('my_tally_counters')) || [
-      { id: Date.now(), name1: 'Counter 1', name2: '', count: 0 }
-    ];
-
-    function saveCounters() {
-      localStorage.setItem('my_tally_counters', JSON.stringify(counters));
-    }
-
-    function renderCounters() {
-      const container = document.getElementById('counter-container');
-      container.innerHTML = '';
-
-      counters.forEach((counter) => {
-        const card = document.createElement('div');
-        card.className = 'counter-card';
-        card.innerHTML = `
-          <div class="counter-header">
-            <div class="counter-inputs">
-              <input type="text" class="counter-title" value="${counter.name1 || ''}" placeholder="Name 1" onchange="updateName(${counter.id}, 'name1', this.value)" />
-              <input type="text" class="counter-title" value="${counter.name2 || ''}" placeholder="Name 2" onchange="updateName(${counter.id}, 'name2', this.value)" />
-            </div>
-            <button class="btn-delete" onclick="deleteCounter(${counter.id})">&times;</button>
-          </div>
-          <div class="counter-body">
-            <button class="btn-count btn-minus" onclick="changeCount(${counter.id}, -1)">-</button>
-            <div class="count-display">${counter.count}</div>
-            <button class="btn-count btn-plus" onclick="changeCount(${counter.id}, 1)">+</button>
-            <button class="btn-count btn-reset" onclick="resetCount(${counter.id})">&#8634;</button>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-
-      saveCounters();
-    }
-
-    function addCounter() {
-      counters.push({
-        id: Date.now(),
-        name1: `Counter ${counters.length + 1}`,
-        name2: '',
-        count: 0
-      });
-      renderCounters();
-    }
-
-    function changeCount(id, delta) {
-      const counter = counters.find(c => c.id === id);
-      if (counter) {
-        counter.count += delta;
-        renderCounters();
-      }
-    }
-
-    function resetCount(id) {
-      const counter = counters.find(c => c.id === id);
-      if (counter) {
-        counter.count = 0;
-        renderCounters();
-      }
-    }
-
-    function updateName(id, field, newName) {
-      const counter = counters.find(c => c.id === id);
-      if (counter) {
-        counter[field] = newName;
-        saveCounters();
-      }
-    }
-
-    function deleteCounter(id) {
-      if (counters.length === 1) return;
-      counters = counters.filter(c => c.id !== id);
-      renderCounters();
-    }
-
-    /* Toggle Dropdown Menu */
-    function toggleSaveMenu(event) {
-      event.stopPropagation();
-      document.getElementById("save-menu").classList.toggle("show");
-    }
-
-    /* Close Dropdown when clicking outside */
-    window.onclick = function(event) {
-      if (!event.target.matches('.btn-action')) {
-        const dropdowns = document.getElementsByClassName("dropdown-content");
-        for (let i = 0; i < dropdowns.length; i++) {
-          let openDropdown = dropdowns[i];
-          if (openDropdown.classList.contains('show')) {
-            openDropdown.classList.remove('show');
-          }
-        }
-      }
-    }
-
-    /* Export JSON (Backup) */
-    function exportJSON() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(counters, null, 2));
-      downloadFile(dataStr, `tally_counters_${getDateString()}.json`);
-    }
-
-    /* Export CSV (Spreadsheet) */
-    function exportCSV() {
-      let csvContent = "data:text/csv;charset=utf-8,Counter #,Name 1,Name 2,Count\n";
-      
-      counters.forEach((c, index) => {
-        const name1 = `"${(c.name1 || '').replace(/"/g, '""')}"`;
-        const name2 = `"${(c.name2 || '').replace(/"/g, '""')}"`;
-        csvContent += `${index + 1},${name1},${name2},${c.count}\n`;
-      });
-
-      downloadFile(encodeURI(csvContent), `tally_counters_${getDateString()}.csv`);
-    }
-
-    function downloadFile(uri, filename) {
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", uri);
-      downloadAnchor.setAttribute("download", filename);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    }
-
-    function getDateString() {
-      return new Date().toISOString().slice(0, 10);
-    }
-
-    /* Import JSON File */
-    function importData(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const loadedCounters = JSON.parse(e.target.result);
-          if (Array.isArray(loadedCounters)) {
-            counters = loadedCounters;
-            renderCounters();
-          } else {
-            alert("Invalid file format.");
-          }
-        } catch (err) {
-          alert("Error loading file. Make sure it is a valid backup file.");
-        }
-      };
-      reader.readAsText(file);
-      event.target.value = '';
-    }
-
-    renderCounters();
-  </script>
 </body>
 </html>
