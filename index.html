@@ -23,12 +23,12 @@
       overflow: hidden;
     }
 
-    /* Header */
+    /* Fixed Header with Action Buttons */
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 15px;
+      padding: 10px 12px;
       background-color: #1e1e1e;
       box-shadow: 0 2px 5px rgba(0,0,0,0.5);
       z-index: 10;
@@ -37,27 +37,43 @@
     }
 
     header h1 {
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 600;
     }
 
-    .btn-add {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      padding: 6px 14px;
+    .header-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-action {
+      background-color: #333;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 5px 10px;
       border-radius: 6px;
+      font-size: 0.85rem;
       font-weight: bold;
       cursor: pointer;
     }
 
-    /* Scrollable Container with Extra Bottom Clearance */
+    .btn-add {
+      background-color: #007bff;
+      border-color: #007bff;
+    }
+
+    /* Hidden file input for load button */
+    #file-input {
+      display: none;
+    }
+
+    /* Scrollable Container with Clearance */
     #counter-container {
       display: flex;
       flex-direction: column;
       flex: 1;
       gap: 8px;
-      padding: 8px 8px calc(70px + env(safe-area-inset-bottom)) 8px; /* Clearance for mobile browser bars */
+      padding: 8px 8px calc(70px + env(safe-area-inset-bottom)) 8px;
       overflow-y: auto;
     }
 
@@ -179,8 +195,14 @@
 
   <header>
     <h1>Tally Counter</h1>
-    <button class="btn-add" onclick="addCounter()">+ Add</button>
+    <div class="header-actions">
+      <button class="btn-action" onclick="exportData()">Save</button>
+      <button class="btn-action" onclick="document.getElementById('file-input').click()">Load</button>
+      <button class="btn-action btn-add" onclick="addCounter()">+ Add</button>
+    </div>
   </header>
+
+  <input type="file" id="file-input" accept=".json" onchange="importData(event)" />
 
   <div id="counter-container"></div>
 
@@ -259,6 +281,40 @@
       if (counters.length === 1) return;
       counters = counters.filter(c => c.id !== id);
       renderCounters();
+    }
+
+    /* Export configuration to a JSON file */
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(counters, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `tally_counters_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    /* Import configuration from a selected JSON file */
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const loadedCounters = JSON.parse(e.target.result);
+          if (Array.isArray(loadedCounters)) {
+            counters = loadedCounters;
+            renderCounters();
+          } else {
+            alert("Invalid file format.");
+          }
+        } catch (err) {
+          alert("Error loading file. Make sure it is a valid backup file.");
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = ''; // Reset file input so the same file can be re-loaded if needed
     }
 
     renderCounters();
