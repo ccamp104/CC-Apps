@@ -44,6 +44,7 @@
     .header-actions {
       display: flex;
       gap: 6px;
+      align-items: center;
     }
 
     .btn-action {
@@ -62,12 +63,57 @@
       border-color: #007bff;
     }
 
-    /* Hidden file input for load button */
+    /* Save Dropdown Menu Styling */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 110%;
+      background-color: #252525;
+      min-width: 120px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
+      border-radius: 6px;
+      border: 1px solid #3d3d3d;
+      z-index: 20;
+    }
+
+    .dropdown-content button {
+      color: #ffffff;
+      padding: 10px 12px;
+      text-decoration: none;
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .dropdown-content button:not(:last-child) {
+      border-bottom: 1px solid #333;
+    }
+
+    .dropdown-content button:active {
+      background-color: #007bff;
+    }
+
+    .show {
+      display: block;
+    }
+
+    /* Hidden file input */
     #file-input {
       display: none;
     }
 
-    /* Scrollable Container with Clearance */
+    /* Scrollable Container with Extra Bottom Clearance */
     #counter-container {
       display: flex;
       flex-direction: column;
@@ -99,7 +145,7 @@
       border: 1px solid #343746;
     }
 
-    /* Header Row with Dual Input Fields */
+    /* Header Row with Dual Inputs */
     .counter-header {
       display: flex;
       justify-content: space-between;
@@ -196,9 +242,17 @@
   <header>
     <h1>Tally Counter</h1>
     <div class="header-actions">
-      <button class="btn-action" onclick="exportData()">Save</button>
+      <!-- Save Dropdown -->
+      <div class="dropdown">
+        <button class="btn-action" onclick="toggleSaveMenu(event)">Save &#9662;</button>
+        <div id="save-menu" class="dropdown-content">
+          <button onclick="exportJSON()">Save as JSON</button>
+          <button onclick="exportCSV()">Export to CSV</button>
+        </div>
+      </div>
+      
       <button class="btn-action" onclick="document.getElementById('file-input').click()">Load</button>
-      <button class="btn-action btn-add" onclick="addCounter()">+ Add</button>
+      <button class="btn-action btn-add" onclick="addCounter()">Add Tally +</button>
     </div>
   </header>
 
@@ -283,18 +337,58 @@
       renderCounters();
     }
 
-    /* Export configuration to a JSON file */
-    function exportData() {
+    /* Toggle Dropdown Menu */
+    function toggleSaveMenu(event) {
+      event.stopPropagation();
+      document.getElementById("save-menu").classList.toggle("show");
+    }
+
+    /* Close Dropdown when clicking outside */
+    window.onclick = function(event) {
+      if (!event.target.matches('.btn-action')) {
+        const dropdowns = document.getElementsByClassName("dropdown-content");
+        for (let i = 0; i < dropdowns.length; i++) {
+          let openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains('show')) {
+            openDropdown.classList.remove('show');
+          }
+        }
+      }
+    }
+
+    /* Export JSON (Backup) */
+    function exportJSON() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(counters, null, 2));
+      downloadFile(dataStr, `tally_counters_${getDateString()}.json`);
+    }
+
+    /* Export CSV (Spreadsheet) */
+    function exportCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,Counter #,Name 1,Name 2,Count\n";
+      
+      counters.forEach((c, index) => {
+        const name1 = `"${(c.name1 || '').replace(/"/g, '""')}"`;
+        const name2 = `"${(c.name2 || '').replace(/"/g, '""')}"`;
+        csvContent += `${index + 1},${name1},${name2},${c.count}\n`;
+      });
+
+      downloadFile(encodeURI(csvContent), `tally_counters_${getDateString()}.csv`);
+    }
+
+    function downloadFile(uri, filename) {
       const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `tally_counters_${new Date().toISOString().slice(0,10)}.json`);
+      downloadAnchor.setAttribute("href", uri);
+      downloadAnchor.setAttribute("download", filename);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
     }
 
-    /* Import configuration from a selected JSON file */
+    function getDateString() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    /* Import JSON File */
     function importData(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -314,7 +408,7 @@
         }
       };
       reader.readAsText(file);
-      event.target.value = ''; // Reset file input so the same file can be re-loaded if needed
+      event.target.value = '';
     }
 
     renderCounters();
