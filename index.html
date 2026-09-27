@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Tally Counter</title>
   <style>
     * {
@@ -23,7 +23,7 @@
       overflow: hidden;
     }
 
-    /* Fixed Control Bar */
+    /* Header */
     header {
       display: flex;
       justify-content: space-between;
@@ -51,28 +51,28 @@
       cursor: pointer;
     }
 
-    /* Container: Resizes dynamically, enables scroll if counters overflow */
+    /* Scrollable Container with Extra Bottom Clearance */
     #counter-container {
       display: flex;
       flex-direction: column;
       flex: 1;
       gap: 8px;
-      padding: 8px;
-      overflow-y: auto; /* Enables scrolling when too many counters are added */
+      padding: 8px 8px calc(70px + env(safe-area-inset-bottom)) 8px; /* Clearance for mobile browser bars */
+      overflow-y: auto;
     }
 
-    /* Base Counter Card Styling */
+    /* Base Counter Card */
     .counter-card {
       display: flex;
       flex-direction: column;
       flex: 1;
-      min-height: 110px; /* Prevents buttons/text from collapsing too small */
+      min-height: 110px;
       border-radius: 12px;
       padding: 8px 12px;
       position: relative;
     }
 
-    /* Alternating Background Colors */
+    /* Alternating Colors */
     .counter-card:nth-child(odd) {
       background-color: #1e1e1e;
       border: 1px solid #2a2a2a;
@@ -83,26 +83,36 @@
       border: 1px solid #343746;
     }
 
-    /* Counter Title Formatting */
+    /* Header Row with Dual Input Fields */
     .counter-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
       margin-bottom: 2px;
     }
 
+    .counter-inputs {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+    }
+
     .counter-title {
-      background: transparent;
-      border: none;
-      color: #ffffff; /* Brightened text */
-      font-size: 1rem; /* Slightly larger */
-      font-weight: 600; /* Bolder for visibility */
-      width: 75%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      color: #ffffff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 3px 6px;
+      width: 50%;
     }
 
     .counter-title:focus {
       outline: none;
-      border-bottom: 2px solid #007bff;
+      border-color: #007bff;
+      background: rgba(0, 123, 255, 0.1);
     }
 
     .btn-delete {
@@ -115,7 +125,7 @@
       padding: 2px 6px;
     }
 
-    /* Compact Button Layout */
+    /* Body Layout */
     .counter-body {
       display: flex;
       flex: 1;
@@ -131,14 +141,13 @@
       flex: 1;
     }
 
-    /* Reduced Button Sizes */
     .btn-count {
       border: none;
       border-radius: 8px;
       color: white;
       font-size: 1.4rem;
       font-weight: bold;
-      height: 75%; /* Scaled down height */
+      height: 75%;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -151,17 +160,17 @@
 
     .btn-minus {
       background-color: #383838;
-      width: 18%; /* Narrower width */
+      width: 18%;
     }
 
     .btn-plus {
       background-color: #28a745;
-      width: 35%; /* Reduced width */
+      width: 35%;
     }
 
     .btn-reset {
       background-color: #444;
-      width: 12%; /* Compact reset button */
+      width: 12%;
       font-size: 0.9rem;
     }
   </style>
@@ -177,7 +186,7 @@
 
   <script>
     let counters = JSON.parse(localStorage.getItem('my_tally_counters')) || [
-      { id: Date.now(), name: 'Counter 1', count: 0 }
+      { id: Date.now(), name1: 'Counter 1', name2: '', count: 0 }
     ];
 
     function saveCounters() {
@@ -193,7 +202,10 @@
         card.className = 'counter-card';
         card.innerHTML = `
           <div class="counter-header">
-            <input type="text" class="counter-title" value="${counter.name}" onchange="updateName(${counter.id}, this.value)" />
+            <div class="counter-inputs">
+              <input type="text" class="counter-title" value="${counter.name1 || ''}" placeholder="Name 1" onchange="updateName(${counter.id}, 'name1', this.value)" />
+              <input type="text" class="counter-title" value="${counter.name2 || ''}" placeholder="Name 2" onchange="updateName(${counter.id}, 'name2', this.value)" />
+            </div>
             <button class="btn-delete" onclick="deleteCounter(${counter.id})">&times;</button>
           </div>
           <div class="counter-body">
@@ -212,7 +224,8 @@
     function addCounter() {
       counters.push({
         id: Date.now(),
-        name: `Counter ${counters.length + 1}`,
+        name1: `Counter ${counters.length + 1}`,
+        name2: '',
         count: 0
       });
       renderCounters();
@@ -234,10 +247,10 @@
       }
     }
 
-    function updateName(id, newName) {
+    function updateName(id, field, newName) {
       const counter = counters.find(c => c.id === id);
       if (counter) {
-        counter.name = newName;
+        counter[field] = newName;
         saveCounters();
       }
     }
