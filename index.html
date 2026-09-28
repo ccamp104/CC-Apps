@@ -1022,12 +1022,12 @@
     document.querySelectorAll('.tree-runes').forEach(el => {
       const updateRunes = () => {
         let str = '';
-        const length = 5 + Math.floor(Math.random() * 6); // 4 to 9 characters tall
+        const length = 5 + Math.floor(Math.random() * 5); // 4 to 8 characters tall
         for (let j = 0; j < length; j++) {
           str += runeChars.charAt(Math.floor(Math.random() * runeChars.length));
         }
         el.textContent = str;
-        setTimeout(updateRunes, 800 + Math.random() * 700); 
+        setTimeout(updateRunes, 1200 + Math.random() * 4000); 
       };
       updateRunes();
     });
