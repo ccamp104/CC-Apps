@@ -2,159 +2,1045 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>App Suite</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1d3a2a">
+  <title>The Quiet Grove · My Apps</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    :root {
+      --glow: #d6f28f;
+      --cream: #f1e9cf;
+      --ink: #c9d4bf;
+      --plank: #5a3f27;
+      --plank-dark: #3f2b1a;
+      --display: 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
+      --body: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Segoe UI', Roboto, sans-serif;
     }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { min-height: 100%; }
 
     body {
-      background-color: #121212;
-      color: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      padding: 20px;
+      min-height: 100vh;
+      min-height: 100svh;
+      background: #16301f;
+      color: var(--cream);
+      font-family: var(--body);
+      line-height: 1.5;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ================= The forest scene (stays put while you scroll) ================= */
+    .scene {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 55% 45% at 82% 0%, rgba(255, 236, 170, 0.35), transparent 70%),
+        linear-gradient(180deg, #33624a 0%, #22452f 45%, #16301f 100%);
+    }
+
+    .layer { position: absolute; inset: -2% -3%; will-change: transform; }
+    .layer svg { width: 100%; height: 100%; display: block; }
+    .layer-far { opacity: 0.8; }
+    .layer-canopy { bottom: auto; height: 24%; }
+    .layer-ground { top: auto; height: 26%; }
+
+    .foliage { transform-box: fill-box; transform-origin: 50% 100%; }
+    .vine { transform-box: fill-box; transform-origin: 50% 0%; animation: sway 7s ease-in-out infinite alternate; }
+    @keyframes sway { from { transform: rotate(-1.5deg); } to { transform: rotate(1.5deg); } }
+
+    .side-trunk {
+      position: absolute;
+      top: -2%;
+      bottom: 0;
+      width: clamp(56px, 16vw, 300px);
+      will-change: transform;
+    }
+    .side-trunk svg { width: 100%; height: 100%; display: block; }
+    .side-left  { left: -2vw; }
+    .side-right { right: -2vw; }
+    .side-right svg { transform: scaleX(-1); }
+
+    /* Sunlight shafts, slanting down from the upper right */
+    .sun {
+      position: absolute;
+      inset: 0;
+      mix-blend-mode: screen;
+    }
+    .sun-front {
+      position: fixed;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      mix-blend-mode: soft-light;
+      opacity: 0.55;
+    }
+    .ray {
+      position: absolute;
+      top: -30%;
+      height: 170%;
+      transform: rotate(24deg);
+      transform-origin: 50% 0;
+      background: linear-gradient(180deg,
+        rgba(255, 244, 196, 0.55) 0%,
+        rgba(255, 238, 180, 0.22) 45%,
+        rgba(255, 238, 180, 0) 85%);
+      filter: blur(1.2px);
+      animation: shimmer var(--dur, 11s) ease-in-out infinite alternate;
+      animation-delay: var(--delay, 0s);
+    }
+    @keyframes shimmer {
+      from { opacity: calc(var(--o, 0.7) * 0.55); }
+      to   { opacity: var(--o, 0.7); }
+    }
+
+    .mist {
+      position: absolute;
+      left: -20%;
+      right: -20%;
+      height: 30%;
+      bottom: 8%;
+      background:
+        radial-gradient(ellipse 30% 50% at 25% 50%, rgba(220, 240, 220, 0.12), transparent 70%),
+        radial-gradient(ellipse 35% 45% at 72% 60%, rgba(220, 240, 220, 0.1), transparent 70%);
+      filter: blur(8px);
+      animation: drift 28s ease-in-out infinite alternate;
+    }
+    @keyframes drift { from { transform: translateX(-4%); } to { transform: translateX(4%); } }
+
+    /* Falling leaves canvas */
+    #breeze {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    /* ================= Content ================= */
+    .grove {
+      position: relative;
+      z-index: 2;
       display: flex;
       flex-direction: column;
-      align-items: center;
       min-height: 100vh;
+      min-height: 100svh;
+      padding:
+        calc(clamp(28px, 7vh, 72px) + env(safe-area-inset-top, 0px))
+        clamp(14px, 4vw, 40px)
+        calc(clamp(18px, 5vh, 56px) + env(safe-area-inset-bottom, 0px));
     }
 
-    h1 {
-      margin-bottom: 20px;
-      font-size: 1.5rem;
+    .grove-head {
+      position: relative;
+      z-index: 3;
+      text-align: center;
+      margin: 0 auto clamp(18px, 4vh, 40px);
+      max-width: 34rem;
+    }
+    .grove h1 {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: clamp(2rem, 6vw, 3.4rem);
+      line-height: 1.05;
+      text-shadow: 0 2px 24px rgba(8, 20, 12, 0.9);
+    }
+    .grove-head p {
+      margin-top: 6px;
+      color: var(--ink);
+      font-size: clamp(0.95rem, 2.2vw, 1.05rem);
+      text-shadow: 0 1px 10px rgba(8, 20, 12, 0.95);
     }
 
-    /* Full Window Grid Layout */
+    /* One tree per app. auto-fill means new apps just add more trees. */
     .app-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-      width: 100%;
-      max-width: 100%;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 200px));
       justify-content: center;
+      gap: 8px clamp(10px, 2.5vw, 26px);
+      width: 100%;
+      max-width: 1100px;
+      margin: auto auto 0;
     }
 
-    /* Base Card Style with 600px Max Width */
     .app-card {
       position: relative;
       display: flex;
       flex-direction: column;
-      justify-content: flex-end;
-      height: 140px;
-      padding: 16px;
-      border-radius: 12px;
+      align-items: center;
+      justify-self: center;
+      width: 100%;
+      max-width: 210px;
+      height: 290px;
+      padding-top: 58px;
       text-decoration: none;
-      color: white;
+      color: var(--cream);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* The trunk rises out of frame: the top row reaches up into the canopy */
+    .tree-svg {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: calc(100% + 40px);
+      z-index: 0;
+      pointer-events: none;
+      overflow: visible;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%);
+              mask-image: linear-gradient(to bottom, transparent 0%, #000 18%);
+    }
+    .top-row .tree-svg {
+      height: calc(100% + var(--rise, 220px));
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.6) 12%, #000 34%);
+              mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.6) 12%, #000 34%);
+    }
+
+    /* Moss and ferns that the roots sink into; wide enough to merge with neighbours */
+    .floor {
+      position: absolute;
+      z-index: 1;
+      left: -22%;
+      right: -22%;
+      bottom: -10px;
+      height: 58px;
+      pointer-events: none;
+    }
+    .floor svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+    /* The hollow itself shows the app's background image */
+    .hollow {
+      position: relative;
+      z-index: 2;
+      width: 48%;
+      aspect-ratio: 3 / 4;
+      border-radius: 50% 50% 44% 44% / 56% 56% 38% 38%;
       overflow: hidden;
-      border: 1px solid #333;
+      background-color: #0d0906;
+      background-image: var(--bg, none);
       background-size: cover;
       background-position: center;
-      background-repeat: no-repeat;
-      transition: transform 0.2s ease, border-color 0.2s ease;
-      max-width: 600px;
-      width: 100%;
-      justify-self: center;
+      box-shadow:
+        0 0 0 4px #2a1c11,
+        0 0 0 6px rgba(120, 88, 52, 0.55),
+        0 6px 12px rgba(0, 0, 0, 0.5);
+      transition: box-shadow 0.35s ease, transform 0.35s ease;
     }
-
-    /* Dark Overlay for Text Readability */
-    .app-card::before {
+    .hollow::before {
       content: "";
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.75) 100%);
+      inset: 0;
       z-index: 1;
+      background:
+        radial-gradient(ellipse 80% 30% at 50% 108%, rgba(160, 205, 95, 0.6), transparent 70%),
+        radial-gradient(ellipse at 50% 40%, transparent 35%, rgba(8, 5, 3, 0.75) 100%);
+      box-shadow: inset 0 8px 16px rgba(0, 0, 0, 0.85);
+      border-radius: inherit;
     }
+    .hollow .peek {
+      position: absolute;
+      z-index: 2;
+      left: 50%;
+      bottom: -110%;
+      width: 58%;
+      transform: translateX(-50%);
+      transition: bottom 0.6s ease-out;
+    }
+    .hollow .peek svg { display: block; width: 100%; height: auto; overflow: visible; }
 
+    /* Wooden sign with the app name */
     .app-card-content {
       position: relative;
       z-index: 2;
+      margin-top: 16px;
+      width: 88%;
+      padding: 7px 8px 8px;
+      text-align: center;
+      border-radius: 7px;
+      background: linear-gradient(180deg, var(--plank) 0%, var(--plank-dark) 100%);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 220, 170, 0.18);
     }
-
-    .card-title-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
+    .app-card-content::before, .app-card-content::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 4px; height: 4px;
+      margin-top: -2px;
+      border-radius: 50%;
+      background: #2a1c11;
     }
+    .app-card-content::before { left: 6px; }
+    .app-card-content::after  { right: 6px; }
 
-    .card-icon {
-      width: 22px;
-      height: 22px;
-      fill: #ffffff;
-      flex-shrink: 0;
-    }
-
+    .card-title-row { display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .card-icon { width: 16px; height: 16px; fill: var(--cream); flex-shrink: 0; }
     .app-card h2 {
-      font-size: 1.1rem;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      font-family: var(--display);
+      font-size: 1rem;
+      line-height: 1.2;
+      font-weight: 700;
     }
-
     .app-card p {
-      font-size: 0.8rem;
-      color: #ddd;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      margin-top: 2px;
+      font-size: 0.72rem;
+      line-height: 1.3;
+      color: #e2d6bb;
     }
 
-    .app-card:active {
-      transform: scale(0.98);
-      border-color: #007bff;
+    .app-card:hover .hollow,
+    .app-card:focus-visible .hollow {
+      transform: scale(1.04);
+      box-shadow:
+        0 0 0 4px #2a1c11,
+        0 0 0 6px rgba(214, 242, 143, 0.55),
+        0 0 30px 6px rgba(214, 242, 143, 0.35);
     }
+    .app-card:hover .peek, .app-card:focus-visible .peek { bottom: 3%; }
+    .app-card:active .hollow { transform: scale(0.97); }
+    .app-card:focus-visible { outline: none; }
+    .app-card:focus-visible .app-card-content { outline: 3px solid var(--glow); outline-offset: 3px; }
 
-    /* Disabled / Coming Soon Card Style */
-    .app-card.disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    /* Empty hollow for future apps */
+    .app-card.disabled { cursor: not-allowed; pointer-events: none; }
+    .app-card.disabled .hollow { box-shadow: 0 0 0 4px #2a1c11, 0 0 0 6px rgba(120, 88, 52, 0.3); }
+    .app-card.disabled .peek { bottom: 3%; opacity: 0.75; }
+    .app-card.disabled .app-card-content { opacity: 0.7; }
+
+    /* Background images for each app's hollow */
+    .card-tally { --bg: url('images/tally-bg.jpg'); }
+    .card-cd    { --bg: url('images/CDbutton-bg.webp'); }
+
+    /* ================= Forest spirits (original blob sprites) ================= */
+    .spirit {
+      position: absolute;
+      z-index: 2;
+      width: var(--size, 32px);
       pointer-events: none;
-      border-style: dashed;
-      background-color: #1a1a1a;
+    }
+    .spirit .lean {
+      transform-origin: 50% 100%;
+      transform: rotate(var(--lean, 0deg));
+      transition: transform 0.55s cubic-bezier(0.3, 1.7, 0.5, 1);
+    }
+    .sp { display: block; width: 100%; height: auto; overflow: visible; }
+    .spirit .sp { animation: squish 4s ease-in-out infinite; animation-delay: var(--delay, 0s); transform-origin: 50% 100%; }
+    @keyframes squish {
+      0%, 100% { transform: scale(1, 1); }
+      50% { transform: scale(1.05, 0.95); }
+    }
+    .sp .eyes { transform-box: fill-box; transform-origin: 50% 50%; animation: blink 6s infinite; animation-delay: var(--delay, 0s); }
+    @keyframes blink { 0%, 95%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
+    .sp .ears { transform-box: fill-box; transform-origin: 50% 100%; }
+    .spirit.blown .ears { animation: wobble 0.7s ease-out; }
+    @keyframes wobble { 0% { transform: rotate(0); } 30% { transform: rotate(9deg); } 60% { transform: rotate(-5deg); } 100% { transform: rotate(0); } }
+
+    .root-spirit { bottom: 0; z-index: 3; }
+    .root-spirit.left  { left: -10%; }
+    .root-spirit.right { right: -10%; }
+    .scene .spirit { --size: 40px; }
+
+    /* Large branches framing the top corners */
+    .branch {
+      position: absolute;
+      top: -1%;
+      width: clamp(240px, 40vw, 580px);
+      aspect-ratio: 500 / 280;
+      will-change: transform;
+    }
+    .branch > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    .branch-left  { left: -2%; }
+    .branch-right { right: -2%; }
+    .branch-right > svg { transform: scaleX(-1); }
+    .scene .perch { --size: 34px; transform: translate(-50%, -94%); }
+
+    @media (max-width: 700px) {
+      .app-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 165px)); }
+      .app-card { height: 250px; padding-top: 44px; }
+      .hollow { width: 52%; }
+      .app-card h2 { font-size: 0.95rem; }
+      .spirit { --size: 28px; }
+      .scene .spirit { --size: 32px; }
+      .scene .perch { --size: 22px; }
+      .branch { width: 64vw; top: calc(env(safe-area-inset-top, 0px) + 6px); }
+      .branch-left { left: -8%; }
+      .branch-right { right: -8%; }
     }
 
-    /* Custom Image Background Paths */
-    .card-tally {
-      background-image: url('images/tally-bg.jpg');
-    }
-
-    .card-cd {
-      background-image: url('images/CDbutton-bg.webp');
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
     }
   </style>
 </head>
 <body>
 
-  <h1>My Apps</h1>
+  <!-- Shared bark gradient for the app trees -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="barkGrad" x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0" stop-color="#1a120c"/>
+        <stop offset=".4" stop-color="#2e2016"/>
+        <stop offset=".74" stop-color="#4a3522"/>
+        <stop offset=".9" stop-color="#34251a"/>
+        <stop offset="1" stop-color="#1a120c"/>
+      </linearGradient>
+    </defs>
+  </svg>
 
-  <div class="app-grid">
-    <a href="tally.html" class="app-card card-tally">
-      <div class="app-card-content">
-        <div class="card-title-row">
-          <!-- Tally Icon -->
-          <svg class="card-icon" viewBox="0 0 24 24">
-            <path d="M4 4h2v16H4V4zm5 0h2v16H9V4zm5 0h2v16h-2V4zm5 0h2v16h-2V4zM2 18l19-12v2.5L2 20.5V18z"/>
-          </svg>
-          <h2>Tally Counter</h2>
-        </div>
-        <p>Custom counter application</p>
-      </div>
-    </a>
+  <!-- ===== Forest scene ===== -->
+  <div class="scene" aria-hidden="true">
+    <div class="layer layer-far" data-sway="6"><svg id="farTrees" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice"></svg></div>
+    <div class="layer layer-mid" data-sway="12"><svg id="midTrees" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice"></svg></div>
+    <div class="sun" id="sunBack"></div>
+    <div class="mist"></div>
+    <div class="layer layer-ground" data-sway="16"><svg id="ground" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice"></svg></div>
 
-    <a href="CD-workout.html" class="app-card card-cd">
-      <div class="app-card-content">
-        <h2>CD Workout</h2>
-        <p>Gamified workout tracker</p>
-      </div>
-    </a>
-
-    <!-- Disabled Coming Soon Card -->
-    <div class="app-card disabled">
-      <div class="app-card-content">
-        <h2>Coming Soon</h2>
-        <p>Future Application</p>
-      </div>
+    <div class="side-trunk side-left" data-sway="22">
+      <svg id="trunkSvg" viewBox="0 0 300 900" preserveAspectRatio="none">
+        <path d="M0,0 H190 C168,180 152,360 160,540 C167,690 206,800 300,900 H0Z" fill="#1a120c"/>
+        <path d="M0,0 H152 C134,200 122,380 130,560 C138,700 172,812 240,900 H0Z" fill="#241910"/>
+        <path d="M58,0 C46,250 70,500 56,900" stroke="#130d08" stroke-width="7" fill="none" opacity=".7"/>
+        <path d="M108,0 C96,220 104,470 118,880" stroke="#130d08" stroke-width="4" fill="none" opacity=".6"/>
+        <path d="M150,770 C205,812 256,856 300,882 L300,900 L170,900Z" fill="#1a120c"/>
+        <ellipse cx="152" cy="300" rx="14" ry="44" fill="#56803a" opacity=".85"/>
+        <ellipse cx="140" cy="500" rx="11" ry="30" fill="#6f9a4a" opacity=".7"/>
+        <ellipse cx="168" cy="730" rx="18" ry="34" fill="#56803a" opacity=".85"/>
+        <ellipse cx="230" cy="866" rx="46" ry="12" fill="#56803a" opacity=".8"/>
+        <path d="M150,0 C146,60 152,110 146,170 M170,0 C168,40 174,70 170,110" stroke="#4d7534" stroke-width="4" fill="none" stroke-linecap="round"/>
+      </svg>
     </div>
+    <div class="side-trunk side-right" data-sway="22"><svg id="trunkSvgRight" viewBox="0 0 300 900" preserveAspectRatio="none"></svg></div>
+
+    <div class="layer layer-canopy" data-sway="18"><svg id="canopy" viewBox="0 0 1000 260" preserveAspectRatio="xMidYMin slice"></svg></div>
+
+    <div class="branch branch-left" data-sway="26">
+        <svg viewBox="0 0 500 280" aria-hidden="true">
+          <path d="M-20,14 C80,26 160,58 250,78 C330,96 400,106 486,128 C400,120 330,114 250,102 C160,88 80,66 -20,74Z" fill="#241910"/>
+          <path d="M-20,14 C80,26 160,58 250,78 C330,96 400,106 486,128" fill="none" stroke="#3d2a1a" stroke-width="4"/>
+          <path d="M196,88 C228,60 268,40 322,28 C284,44 248,68 214,96Z" fill="#241910"/>
+          <path d="M60,62 C70,84 64,104 70,124 M110,72 C116,88 112,100 116,112 M300,110 C304,124 302,134 306,146" stroke="#4d7534" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path d="M0,20 C80,32 160,62 250,80" fill="none" stroke="#56803a" stroke-width="7" stroke-linecap="round" opacity=".85"/>
+          <path d="M268,86 C320,98 370,106 420,116" fill="none" stroke="#6f9a4a" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+          <path d="M40,40 C60,52 80,44 96,56 M170,74 C190,80 200,76 214,86" stroke="#1a120c" stroke-width="2.5" fill="none" opacity=".7"/>
+          <g class="foliage"><circle cx="484" cy="126" r="26" fill="#1f3d2a"/><circle cx="462" cy="138" r="20" fill="#27492f"/><circle cx="500" cy="146" r="18" fill="#2f5a36"/><circle cx="478" cy="104" r="16" fill="#1b3524"/></g>
+          <g class="foliage"><circle cx="324" cy="24" r="22" fill="#23452f"/><circle cx="306" cy="14" r="16" fill="#2f5a36"/><circle cx="342" cy="36" r="15" fill="#1d3b2a"/><circle cx="332" cy="8" r="12" fill="#3b6b36"/></g>
+          <g class="foliage"><circle cx="150" cy="96" r="18" fill="#1f3d2a"/><circle cx="168" cy="108" r="14" fill="#27492f"/><circle cx="136" cy="110" r="12" fill="#2f5a36"/></g>
+          <g class="foliage"><circle cx="400" cy="130" r="14" fill="#23452f"/><circle cx="414" cy="140" r="11" fill="#3b6b36"/></g>
+        </svg>
+      <div class="spirit perch" data-variant="staff" style="left:70.8%; top:35.4%; --delay:-.4s"></div>
+      <div class="spirit perch" data-variant="dark" style="left:50%; top:28.4%; --delay:-1.7s"></div>
+    </div>
+    <div class="branch branch-right" data-sway="26">
+        <svg viewBox="0 0 500 280" aria-hidden="true">
+          <path d="M-20,14 C80,26 160,58 250,78 C330,96 400,106 486,128 C400,120 330,114 250,102 C160,88 80,66 -20,74Z" fill="#241910"/>
+          <path d="M-20,14 C80,26 160,58 250,78 C330,96 400,106 486,128" fill="none" stroke="#3d2a1a" stroke-width="4"/>
+          <path d="M196,88 C228,60 268,40 322,28 C284,44 248,68 214,96Z" fill="#241910"/>
+          <path d="M60,62 C70,84 64,104 70,124 M110,72 C116,88 112,100 116,112 M300,110 C304,124 302,134 306,146" stroke="#4d7534" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path d="M0,20 C80,32 160,62 250,80" fill="none" stroke="#56803a" stroke-width="7" stroke-linecap="round" opacity=".85"/>
+          <path d="M268,86 C320,98 370,106 420,116" fill="none" stroke="#6f9a4a" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+          <path d="M40,40 C60,52 80,44 96,56 M170,74 C190,80 200,76 214,86" stroke="#1a120c" stroke-width="2.5" fill="none" opacity=".7"/>
+          <g class="foliage"><circle cx="484" cy="126" r="26" fill="#1f3d2a"/><circle cx="462" cy="138" r="20" fill="#27492f"/><circle cx="500" cy="146" r="18" fill="#2f5a36"/><circle cx="478" cy="104" r="16" fill="#1b3524"/></g>
+          <g class="foliage"><circle cx="324" cy="24" r="22" fill="#23452f"/><circle cx="306" cy="14" r="16" fill="#2f5a36"/><circle cx="342" cy="36" r="15" fill="#1d3b2a"/><circle cx="332" cy="8" r="12" fill="#3b6b36"/></g>
+          <g class="foliage"><circle cx="150" cy="96" r="18" fill="#1f3d2a"/><circle cx="168" cy="108" r="14" fill="#27492f"/><circle cx="136" cy="110" r="12" fill="#2f5a36"/></g>
+          <g class="foliage"><circle cx="400" cy="130" r="14" fill="#23452f"/><circle cx="414" cy="140" r="11" fill="#3b6b36"/></g>
+        </svg>
+      <div class="spirit perch" style="left:29.2%; top:35.4%; --delay:-2.2s"></div>
+      <div class="spirit perch" data-variant="dark staff" style="left:50%; top:28.4%; --delay:-3.1s"></div>
+    </div>
+
+    <div class="spirit" style="left:3%; bottom:2%; --delay:-1s"></div>
+    <div class="spirit" data-variant="dark" style="left:17%; bottom:3.5%; --size:30px; --delay:-2s"></div>
+    <div class="spirit" data-variant="staff" style="right:3%; bottom:3%; --delay:-2.6s"></div>
+    <div class="spirit" style="right:17%; bottom:2.5%; --size:30px; --delay:-.8s"></div>
   </div>
 
+  <div class="sun-front" id="sunFront" aria-hidden="true"></div>
+  <canvas id="breeze" aria-hidden="true"></canvas>
+
+  <!-- ===== Apps ===== -->
+  <main class="grove">
+    <header class="grove-head">
+      <h1>The Quiet Grove</h1>
+      <p>My apps, each resting in its own hollow.</p>
+    </header>
+
+    <nav class="app-grid" aria-label="My apps" data-sway="9">
+
+      <a href="tally.html" class="app-card card-tally">
+        <div class="app-card-content">
+          <h2>Tally Counter</h2>
+          <p>Custom counter application</p>
+        </div>
+      </a>
+
+      <a href="CD-workout.html" class="app-card card-cd" data-spirit="knight">
+        <div class="app-card-content">
+          <h2>CD Workout</h2>
+          <p>Gamified workout tracker</p>
+        </div>
+      </a>
+
+      <!--
+        TO ADD A NEW APP: copy this block above the "Coming Soon" card and change
+        the href, title and description. For a picture inside the hollow, add a
+        class to the <style> section like:
+          .card-myapp { --bg: url('images/myapp-bg.jpg'); }
+        The tree, hollow and spirits are added automatically.
+
+      <a href="my-new-app.html" class="app-card card-myapp">
+        <div class="app-card-content">
+          <h2>My New App</h2>
+          <p>Short description</p>
+        </div>
+      </a>
+      -->
+
+      <!-- Disabled Coming Soon Card -->
+      <div class="app-card disabled" aria-disabled="true">
+        <div class="app-card-content">
+          <h2>Coming Soon</h2>
+          <p>This hollow is still empty</p>
+        </div>
+      </div>
+
+    </nav>
+  </main>
+
+  <script>
+  (() => {
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+    function rng(seed) {
+      return () => {
+        seed = (seed + 0x6D2B79F5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    /* ---------- Background forest ---------- */
+    function buildTrees(svg, o) {
+      const r = rng(o.seed);
+      let out = '';
+      for (let i = 0; i < o.count; i++) {
+        const x = (i + 0.2 + r() * 0.6) / o.count * 1000;
+        const h = o.minH + r() * (o.maxH - o.minH);
+        const w = o.w * (0.7 + r() * 0.6);
+        const top = 600 - h;
+        out += `<path d="M${x - w},600 C${x - w * .55},${600 - h * .4} ${x - w * .35},${600 - h * .75} ${x - w * .25},${top} L${x + w * .25},${top} C${x + w * .35},${600 - h * .75} ${x + w * .55},${600 - h * .4} ${x + w},600Z" fill="${o.trunk}"/>`;
+        let c = '';
+        const n = 4 + Math.floor(r() * 3);
+        for (let k = 0; k < n; k++) {
+          c += `<circle cx="${(x + (r() - .5) * w * 9).toFixed(1)}" cy="${(top + (r() - .3) * w * 3).toFixed(1)}" r="${(w * 2 + r() * w * 2.5).toFixed(1)}" fill="${o.leaves[Math.floor(r() * o.leaves.length)]}"/>`;
+        }
+        out += `<g class="foliage">${c}</g>`;
+      }
+      svg.innerHTML = out;
+    }
+    buildTrees(document.getElementById('farTrees'), { count: 20, seed: 7, minH: 320, maxH: 560, w: 8, trunk: '#2d5541', leaves: ['#2f5d45', '#356650', '#2a5340'] });
+    buildTrees(document.getElementById('midTrees'), { count: 10, seed: 21, minH: 400, maxH: 600, w: 16, trunk: '#1a3325', leaves: ['#1d3b2a', '#22442f', '#193424'] });
+
+    (function buildCanopy() {
+      const r = rng(3);
+      let out = '';
+      for (let i = 0; i < 13; i++) {
+        let c = '';
+        for (let k = 0; k < 5; k++) {
+          const shade = ['#0c1a12', '#10221a', '#0e1e15', '#132a1c'][Math.floor(r() * 4)];
+          c += `<circle cx="${(i * 80 + r() * 50).toFixed(1)}" cy="${(r() * 60 - 10).toFixed(1)}" r="${(40 + r() * 40).toFixed(1)}" fill="${shade}"/>`;
+        }
+        out += `<g class="foliage">${c}</g>`;
+      }
+      for (let v = 0; v < 9; v++) {
+        const x = 60 + v * 110 + r() * 40;
+        const len = 60 + r() * 110;
+        let lv = '';
+        for (let y = 60; y < 60 + len; y += 15) {
+          const side = Math.round(y / 15) % 2 ? 1 : -1;
+          lv += `<ellipse cx="${x + side * 5}" cy="${y}" rx="6" ry="3" fill="#2f5a36" transform="rotate(${side * 30} ${x + side * 5} ${y})"/>`;
+        }
+        out += `<g class="vine foliage" style="animation-delay:${(-r() * 7).toFixed(2)}s"><path d="M${x},50 Q${x + 8},${50 + len / 2} ${x},${60 + len}" stroke="#1f3d26" stroke-width="2.5" fill="none"/>${lv}</g>`;
+      }
+      document.getElementById('canopy').innerHTML = out;
+    })();
+
+    (function buildGround() {
+      const r = rng(11);
+      let out = `<path d="M0,300 L0,190 C150,150 300,215 500,180 C700,150 850,205 1000,170 L1000,300Z" fill="#0f2016"/>`;
+      for (let i = 0; i < 16; i++) {
+        const x = i * 66 + r() * 30, base = 200 + r() * 40;
+        let f = '';
+        for (let k = 0; k < 6; k++) {
+          const dx = (k - 2.5) * 12 + (r() - .5) * 8, hh = 40 + r() * 45;
+          f += `<path d="M${x},${base} Q${x + dx * .4},${base - hh * .7} ${x + dx},${base - hh}" stroke="${['#1f4029', '#27502f', '#1a3522'][k % 3]}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+        }
+        out += `<g class="foliage">${f}</g>`;
+      }
+      document.getElementById('ground').innerHTML = out;
+    })();
+
+    document.getElementById('trunkSvgRight').innerHTML = document.getElementById('trunkSvg').innerHTML;
+
+    /* ---------- Sunlight shafts ---------- */
+    function buildRays(el, seed, count) {
+      const r = rng(seed);
+      let out = '';
+      for (let i = 0; i < count; i++) {
+        const left = 8 + i * (100 / count) + r() * 8;
+        const width = r() < 0.35 ? 6 + r() * 14 : 24 + r() * 80;
+        const o = (0.22 + r() * 0.4).toFixed(2);
+        out += `<div class="ray" style="left:${left.toFixed(1)}%; width:${width.toFixed(0)}px; --o:${o}; --dur:${(8 + r() * 8).toFixed(1)}s; --delay:${(-r() * 10).toFixed(1)}s"></div>`;
+      }
+      el.innerHTML = out;
+    }
+    buildRays(document.getElementById('sunBack'), 17, 11);
+    buildRays(document.getElementById('sunFront'), 29, 5);
+
+    /* ---------- Spirits ---------- */
+    const SPIRIT_COLORS = ['#b9d9a0', '#a8d3c4', '#d9d59a', '#c6dcae'];
+
+    // Moss-cloaked forest spirit. outfit: set with data-spirit="knight" on a card.
+    let spiritUid = 0;
+    function spiritSVG(color, sleepy, outfit) {
+      const id = 'cloak' + (spiritUid++);
+      const has = w => (outfit || '').split(/\s+/).includes(w);
+      const knight = has('knight'), staff = has('staff'), dark = has('dark');
+      const eyes = sleepy
+        ? `<path d="M16,28 Q21,31 26,28 M34,28 Q39,31 44,28" stroke="#4a4b46" stroke-width="2.2" fill="none" stroke-linecap="round"/>`
+        : `<g class="look"><g class="eyes"><circle cx="21" cy="27" r="6.2" fill="#4a4b46"/><circle cx="39" cy="27" r="6.2" fill="#4a4b46"/><circle cx="21" cy="27" r="3.8" fill="#f29a1f"/><circle cx="39" cy="27" r="3.8" fill="#f29a1f"/><circle cx="21" cy="27" r="1.8" fill="#ffd166"/><circle cx="39" cy="27" r="1.8" fill="#ffd166"/><circle cx="22.2" cy="25.8" r=".85" fill="#fff8e6"/><circle cx="40.2" cy="25.8" r=".85" fill="#fff8e6"/></g></g>`;
+
+      let moss = '';
+      const shades = dark ? ['#1f3719', '#29461f', '#335528', '#3f6531'] : ['#3e662a', '#5a8a3a', '#6f9c46', '#87b05a'];
+      const cloakBase = dark ? '#284420' : '#4f7a34';
+      const cloakEdge = dark ? '#1a2e14' : '#3a5f27';
+      let n = 0;
+      for (let row = 0; row < 8; row++) {
+        const y = 37 + row * 6, off = row % 2 ? 3 : 0;
+        for (let x = 2 + off; x < 58; x += 6) {
+          const up = (row + Math.round(x / 3)) % 2 === 0;
+          const c = shades[(n++ * 7 + row) % 4];
+          moss += up
+            ? `<path d="M${x},${y + 5.2} L${x + 3},${y} L${x + 6},${y + 5.2}Z" fill="${c}"/>`
+            : `<path d="M${x},${y} L${x + 6},${y} L${x + 3},${y + 5.2}Z" fill="${c}"/>`;
+        }
+      }
+      const left = 'M30,38 C22,38 15.5,41 14,46.5 C12,57 8.5,67 5,78 Q9,79.4 13,78.4 Q17,79.6 21,78.4 L24,78.2 C25.5,66 27.5,55 30,48Z';
+      const right = 'M30,38 C38,38 44.5,41 46,46.5 C48,57 51.5,67 55,78 Q51,79.4 47,78.4 Q43,79.6 39,78.4 L36,78.2 C34.5,66 32.5,55 30,48Z';
+
+      const earL = `<path d="M15.5,18.5 C20,10 15,-1 6,-5 C2.5,3 8,13 15.5,18.5Z" fill="#cfd2cc"/><path d="M14,15 C13,9 10,3 7,-1" fill="none" stroke="#b3b7b0" stroke-width="${knight ? 1.4 : 1}"/><path d="M8,3 L11,4 L10.5,8 L7.5,7Z" fill="#6f9c46"/>`;
+      const earR = `<path d="M44.5,18.5 C40,10 45,-1 54,-5 C57.5,3 52,13 44.5,18.5Z" fill="#cfd2cc"/><path d="M46,15 C47,9 50,3 53,-1" fill="none" stroke="#b3b7b0" stroke-width="${knight ? 1.4 : 1}"/><path d="M51,1 L54,1.5 L53,5 L50.5,4Z" fill="#87b05a"/>`;
+      const ears = knight
+        ? `<g transform="translate(15.5 18.5) scale(.6) translate(-15.5 -18.5)">${earL}</g><g transform="translate(44.5 18.5) scale(.6) translate(-44.5 -18.5)">${earR}</g>`
+        : earL + earR;
+
+      const antlers = knight ? `
+        <g fill="none" stroke="#d9c9a3" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M24,15 C23,8 21,2 18,-5 M21.5,5 C18,3.5 15,1 13,-2 M19.5,0 C18,-4 17,-7 14,-10 M18.5,-3 C20,-6 21,-9 22,-12"/>
+          <path d="M36,15 C37,9 39,4 41,-2 M38.5,7 C41.5,6 44,4 46,1 M40.5,1 C42,-2 43,-4 45,-6"/>
+        </g>
+        <path d="M22.5,14 L25.5,14 M34.5,14 L37.5,14" stroke="#b8a680" stroke-width="2" stroke-linecap="round"/>` : '';
+
+      const gear = knight ? `
+        <g transform="rotate(-12 8 62)">
+          <path d="M6.4,60 L6.4,32 L8,28.5 L9.6,32 L9.6,60Z" fill="#dfe4e8" stroke="#8e979e" stroke-width=".6"/>
+          <path d="M8,31 L8,58" stroke="#aab2b8" stroke-width=".6"/>
+          <rect x="2.3" y="59.5" width="11.4" height="2.6" rx="1.2" fill="#9a7a3e"/>
+          <rect x="6.7" y="62" width="2.6" height="6" fill="#5a3f27"/>
+          <circle cx="8" cy="69" r="1.6" fill="#9a7a3e"/>
+          <ellipse cx="8" cy="64.5" rx="3.2" ry="3.4" fill="#4f7a34"/>
+        </g>
+        <rect x="37" y="47" width="22" height="29" rx="2.6" fill="#6b4a2e" stroke="#4a321f" stroke-width="1.6"/>
+        <path d="M41,49 C42,56 40,63 41.5,74 M45.5,49 L46.5,74 M50,49 C49,57 51,64 50,74 M54.5,49 L55,74" stroke="#4a321f" stroke-width="1" fill="none"/>
+        <ellipse cx="48" cy="60" rx="2.6" ry="3.6" fill="#5a3d25" stroke="#4a321f" stroke-width=".9"/>
+        <path d="M37.5,53 L58.5,53 M37.5,70 L58.5,70" stroke="#3a2718" stroke-width="1.4"/>
+        <path d="M38,76 C44,74 52,74 58,76" stroke="#6f9c46" stroke-width="1.6" fill="none"/>` : '';
+
+      const staffSVG = staff ? `
+        <path d="M52.5,86 C52,66 53.5,40 52.4,6" stroke="#6b4a2e" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+        <path d="M52.4,6 C52,-2 58,-5 60,0 C61.5,4 57,6 55.5,3" stroke="#6b4a2e" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+        <path d="M51.6,20 L51.8,34 M53.2,48 L53,60" stroke="#4a321f" stroke-width="1"/>
+        <path d="M55.5,3 C52,1 49,2 47,5 C50,6 53,5.5 55.5,3Z" fill="#6f9c46"/>
+        <path d="M58,4 C60,8 59,11 57,12.5 C56,10 56,7 58,4Z" fill="#87b05a"/>
+        <ellipse cx="52.6" cy="56" rx="3.3" ry="3.5" fill="#c9ccc5"/>` : '';
+
+      return `<svg class="sp" viewBox="0 -14 60 104" aria-hidden="true">
+        <defs><clipPath id="${id}"><path d="${left}"/><path d="${right}"/></clipPath></defs>
+        <ellipse cx="30" cy="88" rx="16" ry="2.4" fill="rgba(0,0,0,.3)"/>
+        <path d="M17,75 L27,75 L25.2,86 C25,87.4 19,87.4 18.8,86Z" fill="#6b4a2e"/>
+        <path d="M33,75 L43,75 L41.2,86 C41,87.4 35,87.4 34.8,86Z" fill="#6b4a2e"/>
+        <path d="M20,76 L21,86 M23.5,76 L23,85.5 M36,76 L37,86 M39.5,76 L39,85.5" stroke="#4a321f" stroke-width="1"/>
+        <rect x="20" y="40" width="20" height="39" rx="9" fill="#c9ccc5"/>
+        <path d="M28,50 L27,78 M32,50 L33,78" stroke="#b3b7b0" stroke-width="1.2"/>
+        <g clip-path="url(#${id})"><rect x="0" y="36" width="60" height="46" fill="${cloakBase}"/>${moss}</g>
+        <path d="${left}" fill="none" stroke="${cloakEdge}" stroke-width="0.9"/>
+        <path d="${right}" fill="none" stroke="${cloakEdge}" stroke-width="0.9"/>
+        <path d="M30,48 C27.5,55 25.5,66 24,78.2 M30,48 C32.5,55 34.5,66 36,78.2" fill="none" stroke="#2f4e20" stroke-width="1.3"/>
+        <g class="ears">${antlers}${ears}</g>
+        <ellipse cx="30" cy="28" rx="22" ry="14.5" fill="#b9bdb6"/>
+        <ellipse cx="30" cy="26.6" rx="21.4" ry="13.2" fill="#cfd2cc"/>
+        <ellipse cx="19" cy="18.5" rx="4" ry="1.6" fill="#e2e4df" transform="rotate(-20 19 18.5)"/>
+        ${eyes}
+        <path d="M28.9,31.8 L31.1,31.8" stroke="#7d807a" stroke-width="1.1" stroke-linecap="round"/>
+        ${gear}
+        ${staffSVG}
+      </svg>`;
+    }
+
+    const VARIANTS = ['', 'staff', 'dark', 'dark staff'];
+    function mountSpirit(el, color, sleepy) {
+      el.innerHTML = `<div class="hop"><div class="lean">${spiritSVG(color, sleepy, el.dataset.variant)}</div></div>`;
+    }
+
+    /* ---------- Turn each app into a tree with a hollow ---------- */
+    // Tall trunk (viewBox 510 units). Lower rows only show the bottom part.
+    const TREE_SVG = `<svg class="tree-svg" viewBox="0 170 200 340" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M56,0 H144 C148,140 158,230 160,300 C158,360 156,400 160,440 C164,476 174,496 198,504 L200,510 H0 L2,504 C26,496 36,476 40,440 C44,400 42,360 40,300 C42,230 52,140 56,0Z" fill="url(#barkGrad)"/>
+      <path d="M72,0 C66,140 72,300 64,500 M100,20 C96,120 106,220 98,330 M130,0 C136,160 128,320 142,490" stroke="#120c07" stroke-width="3" fill="none" opacity=".55"/>
+      <path d="M40,440 C30,476 14,496 2,504 M160,440 C170,476 186,496 198,504" stroke="#120c07" stroke-width="3" fill="none" opacity=".4"/>
+      <path d="M58,150 C44,140 30,134 12,130" stroke="#2a1c11" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <g class="foliage"><circle cx="12" cy="124" r="14" fill="#1f3d2a"/><circle cx="26" cy="118" r="11" fill="#27492f"/><circle cx="4" cy="132" r="9" fill="#1b3524"/></g>
+      <path d="M146,96 C160,86 176,82 194,80" stroke="#2a1c11" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <g class="foliage"><circle cx="192" cy="74" r="13" fill="#23452f"/><circle cx="178" cy="70" r="10" fill="#2f5a36"/><circle cx="198" cy="86" r="8" fill="#1d3b2a"/></g>
+      <path d="M30,134 C30,146 32,154 30,162 M22,132 C22,140 23,146 22,150" stroke="#4d7534" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <ellipse cx="44" cy="330" rx="6" ry="22" fill="#56803a" opacity=".8"/>
+      <ellipse cx="156" cy="400" rx="7" ry="18" fill="#6f9a4a" opacity=".7"/>
+    </svg>`;
+
+    function floorSVG(seed) {
+      const r = rng(seed);
+      let ferns = '';
+      [22, 58, 92, 168, 204, 240].forEach(x => {
+        x += (r() - .5) * 14;
+        let f = '';
+        const n = 4 + Math.floor(r() * 3);
+        for (let k = 0; k < n; k++) {
+          const dx = (k - n / 2) * 7 + (r() - .5) * 5, hh = 16 + r() * 26;
+          f += `<path d="M${x.toFixed(1)},46 Q${(x + dx * .4).toFixed(1)},${(46 - hh * .7).toFixed(1)} ${(x + dx).toFixed(1)},${(46 - hh).toFixed(1)}" stroke="${['#2c5a30', '#3b6b36', '#244a28'][k % 3]}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+        }
+        ferns += `<g class="foliage">${f}</g>`;
+      });
+      return `<svg viewBox="0 0 260 60" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0,60 C22,40 70,30 130,29 C190,30 238,40 260,60Z" fill="#1f3a1f" opacity=".9"/>
+        <path d="M34,50 C60,36 96,33 130,33 C164,33 200,36 226,50 C190,44 70,44 34,50Z" fill="#3f6a2c"/>
+        ${ferns}
+      </svg>`;
+    }
+
+    function markRows() {
+      const cards = [...document.querySelectorAll('.app-card')];
+      if (!cards.length) return;
+      const firstTop = cards[0].offsetTop;
+      const rise = Math.max(120, cards[0].getBoundingClientRect().top + scrollY + 20);
+      document.documentElement.style.setProperty('--rise', rise + 'px');
+      cards.forEach(c => {
+        const top = Math.abs(c.offsetTop - firstTop) < 5;
+        c.classList.toggle('top-row', top);
+        const svg = c.querySelector('.tree-svg');
+        if (!svg) return;
+        if (top) {
+          // stretch the full trunk up into the canopy
+          svg.setAttribute('viewBox', '0 0 200 510');
+        } else {
+          svg.setAttribute('viewBox', '0 170 200 340');
+        }
+      });
+    }
+
+    const treeSpirits = [];
+    document.querySelectorAll('.app-card').forEach((card, i) => {
+      const disabled = card.classList.contains('disabled');
+      const color = SPIRIT_COLORS[i % SPIRIT_COLORS.length];
+
+      const hollow = document.createElement('span');
+      hollow.className = 'hollow';
+      hollow.setAttribute('aria-hidden', 'true');
+      hollow.innerHTML = `<span class="peek">${spiritSVG(color, disabled, card.dataset.spirit || VARIANTS[(i + 2) % VARIANTS.length])}</span>`;
+
+      card.insertAdjacentHTML('afterbegin', TREE_SVG);
+      card.insertBefore(hollow, card.querySelector('.app-card-content'));
+      const floor = document.createElement('span');
+      floor.className = 'floor';
+      floor.innerHTML = floorSVG(40 + i * 13);
+      card.appendChild(floor);
+
+      // Every other tree gets a spirit sitting on its roots
+      if (i % 2 === 0 && !disabled) {
+        const s = document.createElement('div');
+        s.className = 'spirit root-spirit ' + (i % 4 === 0 ? 'left' : 'right');
+        s.style.setProperty('--delay', (-i * 0.8) + 's');
+        s.dataset.variant = VARIANTS[(i + 1) % VARIANTS.length];
+        mountSpirit(s, SPIRIT_COLORS[(i + 2) % SPIRIT_COLORS.length]);
+        card.appendChild(s);
+        treeSpirits.push(s);
+        card.addEventListener('pointerenter', () => hop(s, performance.now()));
+      }
+    });
+
+    document.querySelectorAll('.scene .spirit').forEach(s => mountSpirit(s, s.dataset.color));
+    markRows();
+    addEventListener('resize', markRows);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(markRows);
+    const spirits = [...document.querySelectorAll('.spirit')];
+
+    function hop(s, now) {
+      if (reduceMotion || (s._hop && now - s._hop < 800)) return;
+      s._hop = now;
+      s.querySelector('.hop').animate([
+        { transform: 'translateY(0)' }, { transform: 'translateY(-12px)' }, { transform: 'translateY(0)' }
+      ], { duration: 460, easing: 'cubic-bezier(.3,.7,.4,1)' });
+    }
+
+    /* ---------- Breeze input ---------- */
+    let px = -9999, py = -9999, pvx = 0, pvy = 0, lastX = null, lastY = null;
+    let pointerActive = false, needsReact = false, mx = 0.5, spawnAcc = 0;
+
+    function onMove(x, y) {
+      if (lastX !== null) {
+        pvx += (clamp(x - lastX, -40, 40) - pvx) * 0.35;
+        pvy += (clamp(y - lastY, -40, 40) - pvy) * 0.35;
+        spawnAcc += Math.hypot(x - lastX, y - lastY);
+      }
+      lastX = x; lastY = y; px = x; py = y;
+      mx = x / innerWidth;
+      pointerActive = true;
+      needsReact = true;
+    }
+    addEventListener('pointermove', e => { if (e.pointerType === 'mouse') onMove(e.clientX, e.clientY); }, { passive: true });
+    addEventListener('touchstart', e => { const t = e.touches[0]; lastX = t.clientX; lastY = t.clientY; px = lastX; py = lastY; }, { passive: true });
+    addEventListener('touchmove', e => { const t = e.touches[0]; onMove(t.clientX, t.clientY); }, { passive: true });
+    addEventListener('touchend', () => { lastX = null; pointerActive = false; }, { passive: true });
+    document.documentElement.addEventListener('mouseleave', () => { lastX = null; pointerActive = false; });
+
+    /* ---------- Rustling + spirit reactions ---------- */
+    const foliage = [...document.querySelectorAll('.foliage')];
+    const sunFront = document.getElementById('sunFront');
+
+    function react(now) {
+      const speed = Math.hypot(pvx, pvy);
+
+      if (speed > 3 && !reduceMotion) {
+        for (const el of foliage) {
+          if (el._t && now - el._t < 900) continue;
+          const b = el.getBoundingClientRect();
+          if (b.bottom < 0 || b.top > innerHeight) continue;
+          const cx = clamp(px, b.left, b.right), cy = clamp(py, b.top, b.bottom);
+          if (Math.hypot(px - cx, py - cy) < 40) {
+            el._t = now;
+            const amt = (pvx >= 0 ? 1 : -1) * (1.5 + Math.min(speed, 30) / 8);
+            el.animate([
+              { transform: 'rotate(0deg)' }, { transform: `rotate(${amt}deg)` },
+              { transform: `rotate(${-amt * 0.55}deg)` }, { transform: `rotate(${amt * 0.25}deg)` },
+              { transform: 'rotate(0deg)' }
+            ], { duration: 900, easing: 'ease-out' });
+          }
+        }
+      }
+
+      for (const s of spirits) {
+        const b = s.getBoundingClientRect();
+        if (b.bottom < -50 || b.top > innerHeight + 50) continue;
+        const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+        const dx = px - cx, dy = py - cy, d = Math.hypot(dx, dy) || 1;
+        const eyes = s.querySelector('.look');
+        if (eyes) {
+          const k = d < 600 ? 1.8 : 0;
+          eyes.setAttribute('transform', `translate(${(dx / d * k).toFixed(2)} ${(dy / d * k).toFixed(2)})`);
+        }
+        if (d < 140 && speed > 4) {
+          s.style.setProperty('--lean', clamp(pvx * 1.3, -28, 28) + 'deg');
+          s.classList.add('blown');
+          clearTimeout(s._to);
+          s._to = setTimeout(() => { s.style.setProperty('--lean', '0deg'); s.classList.remove('blown'); }, 650);
+          if (speed > 18 && d < 100) hop(s, now);
+        }
+      }
+    }
+
+    /* ---------- Falling leaves ---------- */
+    const cv = document.getElementById('breeze');
+    const ctx = cv.getContext('2d');
+    let W = 0, H = 0, baseCount = 0;
+    const LEAF_COLORS = ['#6f9a4a', '#86ad55', '#4f7a3a', '#a5b85c', '#b98a3e', '#5d8a47', '#7fa453', '#c49a45'];
+    let leaves = [];
+    let extraLeaves = 0;
+    const MAX_EXTRA = reduceMotion ? 0 : 90;
+
+    function makeLeaf(anyY, x, y, vx, vy) {
+      return {
+        x: x ?? Math.random() * W,
+        y: y ?? (anyY ? Math.random() * H : -20 - Math.random() * 60),
+        vx: vx ?? 0,
+        vy: vy ?? 0.3 + Math.random() * 0.4,
+        a: Math.random() * 6.28, va: (Math.random() - 0.5) * 0.05,
+        s: 4.5 + Math.random() * 6,
+        c: LEAF_COLORS[Math.floor(Math.random() * LEAF_COLORS.length)],
+        ph: Math.random() * 6.28, flip: Math.random() * 6.28,
+        extra: x !== undefined
+      };
+    }
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = innerWidth; H = innerHeight;
+      cv.width = W * dpr; cv.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      baseCount = W < 700 ? 36 : 70;
+      if (reduceMotion) baseCount = Math.round(baseCount / 4);
+      let base = leaves.filter(l => !l.extra);
+      const extras = leaves.filter(l => l.extra);
+      while (base.length < baseCount) base.push(makeLeaf(true));
+      base.length = baseCount;
+      leaves = base.concat(extras);
+    }
+    addEventListener('resize', resize);
+    resize();
+
+    function drawLeaf(l) {
+      ctx.save();
+      ctx.translate(l.x, l.y);
+      ctx.rotate(l.a);
+      ctx.scale(Math.max(0.2, Math.abs(Math.cos(l.flip))), 1);
+      ctx.fillStyle = l.c;
+      ctx.beginPath();
+      ctx.moveTo(0, -l.s);
+      ctx.quadraticCurveTo(l.s * 0.75, 0, 0, l.s);
+      ctx.quadraticCurveTo(-l.s * 0.75, 0, 0, -l.s);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.25)';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(0, -l.s * 0.9);
+      ctx.lineTo(0, l.s * 1.2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    /* ---------- Click anywhere (except on an app) for a little pop of leaves ---------- */
+    const pops = [];
+    addEventListener('click', e => {
+      if (e.target.closest('a, button, [role="button"], input, textarea, select')) return;
+      const n = reduceMotion ? 6 : 16;
+      for (let j = 0; j < n; j++) {
+        const ang = Math.random() * Math.PI * 2;
+        const sp = 1.4 + Math.random() * 2.4;
+        const leaf = makeLeaf(false, e.clientX, e.clientY, Math.cos(ang) * sp, Math.sin(ang) * sp - 0.8);
+        leaf.burst = 45 + Math.random() * 20;
+        leaf.va = (Math.random() - 0.5) * 0.25;
+        leaves.push(leaf);
+        extraLeaves++;
+      }
+      if (!reduceMotion) pops.push({ x: e.clientX, y: e.clientY, t: 0 });
+    });
+
+    /* ---------- Main loop ---------- */
+    const layers = [...document.querySelectorAll('[data-sway]')];
+    let lastT = performance.now(), lastScroll = scrollY, sunDim = 0;
+
+    function tick(now) {
+      const k = Math.min(3, (now - lastT) / 16.67);
+      lastT = now;
+      const scrollV = clamp(scrollY - lastScroll, -60, 60);
+      lastScroll = scrollY;
+
+      // Trees sway gently toward the cursor
+      if (!reduceMotion) {
+        for (const l of layers) l.style.transform = `translate3d(${((mx - 0.5) * -l.dataset.sway).toFixed(1)}px,0,0)`;
+      }
+
+      if (needsReact) { react(now); needsReact = false; }
+
+      // A strong breeze makes the light flicker through the moving leaves
+      const speed = Math.hypot(pvx, pvy);
+      sunDim += (Math.min(speed / 40, 1) * 0.35 - sunDim) * 0.1;
+      sunFront.style.opacity = (0.55 - sunDim).toFixed(3);
+
+      // Moving the cursor shakes loose extra leaves
+      if (pointerActive && !reduceMotion) {
+        let n = 0;
+        while (spawnAcc > 24 && extraLeaves < MAX_EXTRA && n < 3) {
+          spawnAcc -= 24; n++; extraLeaves++;
+          leaves.push(makeLeaf(false,
+            px + (Math.random() - 0.5) * 30,
+            py + (Math.random() - 0.5) * 30,
+            pvx * 0.03 + (Math.random() - 0.5) * 0.4,
+            pvy * 0.03 - Math.random() * 0.3));
+        }
+      }
+      spawnAcc = Math.min(spawnAcc, 60);
+
+      ctx.clearRect(0, 0, W, H);
+      const R = 170;
+      for (let i = leaves.length - 1; i >= 0; i--) {
+        const l = leaves[i];
+        l.ph += 0.02 * k;
+        l.vx += Math.sin(l.ph) * 0.012 * k;
+        l.vy += (0.55 - l.vy) * 0.02 * k;
+        l.vy -= scrollV * 0.004;
+        if (pointerActive) {
+          const dx = l.x - px, dy = l.y - py, d = Math.hypot(dx, dy);
+          if (d < R) {
+            const f = 1 - d / R;
+            l.vx += (pvx * 0.01 + dx / (d || 1) * 0.02) * f * k;
+            l.vy += (pvy * 0.008 + dy / (d || 1) * 0.015) * f * k;
+            l.va += pvx * 0.0003 * f;
+          }
+        }
+        if (l.burst > 0) {
+          // freshly popped leaves slow down smoothly before joining the drift
+          l.burst -= k;
+          l.vx *= Math.pow(0.93, k);
+          l.vy = l.vy * Math.pow(0.93, k) + 0.02 * k;
+          l.va *= 0.97;
+        } else {
+          l.vx *= Math.pow(0.98, k);
+          l.vx = clamp(l.vx, -2, 2);
+          l.vy = clamp(l.vy, -1.2, 1.8);
+          l.va = clamp(l.va * 0.99, -0.06, 0.06);
+        }
+        l.x += l.vx * k; l.y += l.vy * k;
+        l.a += (l.va + l.vx * 0.01) * k;
+        l.flip += 0.03 * k;
+
+        if (l.extra) {
+          if (l.y > H + 30 || l.y < -100 || l.x < -60 || l.x > W + 60) {
+            leaves.splice(i, 1); extraLeaves--; continue;
+          }
+        } else {
+          if (l.y > H + 30) Object.assign(l, makeLeaf(false));
+          if (l.y < -80) { l.y = H + 20; l.x = Math.random() * W; }
+          if (l.x < -40) l.x = W + 30; else if (l.x > W + 40) l.x = -30;
+        }
+        ctx.globalAlpha = 0.9;
+        drawLeaf(l);
+      }
+      for (let i = pops.length - 1; i >= 0; i--) {
+        const p = pops[i];
+        p.t += k / 22;
+        if (p.t >= 1) { pops.splice(i, 1); continue; }
+        ctx.globalAlpha = (1 - p.t) * 0.6;
+        ctx.strokeStyle = '#d6f28f';
+        ctx.lineWidth = 2 * (1 - p.t) + 0.5;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 6 + p.t * 26, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      pvx *= 0.9; pvy *= 0.9;
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  })();
+  </script>
 </body>
 </html>
