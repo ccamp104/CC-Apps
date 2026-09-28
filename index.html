@@ -318,6 +318,7 @@
     /* Background images for each app's hollow */
     .card-tally { --bg: none; }
     .card-cd    { --bg: none; }
+    .card-regie { --bg: none; }
 
     /* ================= Forest spirits (original blob sprites) ================= */
     .spirit {
@@ -338,6 +339,8 @@
       50% { transform: scale(1.05, 0.95); }
     }
     .sp .eyes { transform-box: fill-box; transform-origin: 50% 50%; animation: blink 6s infinite; animation-delay: var(--delay, 0s); }
+    .sp .neon { animation: hum 2.8s ease-in-out infinite; }
+    @keyframes hum { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
     @keyframes blink { 0%, 95%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
     .sp .ears { transform-box: fill-box; transform-origin: 50% 100%; }
     .spirit.blown .ears { animation: wobble 0.7s ease-out; }
@@ -503,13 +506,14 @@
       </a>
       -->
 
-      <!-- Disabled Coming Soon Card -->
-      <div class="app-card disabled" aria-disabled="true">
+      <a href="Regie.html" class="app-card card-regie" data-spirit="synth">
         <div class="app-card-content">
-          <h2>Coming Soon</h2>
-          <p>This hollow is still empty</p>
+          <h2>Regie</h2>
+          <p>A new tool in the grove</p>
         </div>
-      </div>
+      </a>
+
+      <!-- Disabled Coming Soon Card -->
 
       <div class="app-card disabled" aria-disabled="true">
         <div class="app-card-content">
@@ -623,20 +627,21 @@
     /* ---------- Spirits ---------- */
     const SPIRIT_COLORS = ['#b9d9a0', '#a8d3c4', '#d9d59a', '#c6dcae'];
 
-    // Moss-cloaked forest spirit. outfit: set with data-spirit="knight" on a card.
+    // Moss-cloaked forest spirit. outfit: set with data-spirit="knight" / "staff" / "dark" / "synth" on a card.
     let spiritUid = 0;
     function spiritSVG(color, sleepy, outfit) {
       const id = 'cloak' + (spiritUid++);
       const has = w => (outfit || '').split(/\s+/).includes(w);
-      const knight = has('knight'), staff = has('staff'), dark = has('dark');
+      const knight = has('knight'), staff = has('staff'), dark = has('dark'), synth = has('synth');
       const eyes = sleepy
         ? `<path d="M16,28 Q21,31 26,28 M34,28 Q39,31 44,28" stroke="#4a4b46" stroke-width="2.2" fill="none" stroke-linecap="round"/>`
         : `<g class="look"><g class="eyes"><circle cx="21" cy="27" r="6.2" fill="#4a4b46"/><circle cx="39" cy="27" r="6.2" fill="#4a4b46"/><circle cx="21" cy="27" r="3.8" fill="#f29a1f"/><circle cx="39" cy="27" r="3.8" fill="#f29a1f"/><circle cx="21" cy="27" r="1.8" fill="#ffd166"/><circle cx="39" cy="27" r="1.8" fill="#ffd166"/><circle cx="22.2" cy="25.8" r=".85" fill="#fff8e6"/><circle cx="40.2" cy="25.8" r=".85" fill="#fff8e6"/></g></g>`;
 
       let moss = '';
-      const shades = dark ? ['#1f3719', '#29461f', '#335528', '#3f6531'] : ['#3e662a', '#5a8a3a', '#6f9c46', '#87b05a'];
-      const cloakBase = dark ? '#284420' : '#4f7a34';
-      const cloakEdge = dark ? '#1a2e14' : '#3a5f27';
+      const shades = synth ? ['#2b1e4a', '#3b2566', '#4a2d7a', '#5c3a8f']
+        : dark ? ['#1f3719', '#29461f', '#335528', '#3f6531'] : ['#3e662a', '#5a8a3a', '#6f9c46', '#87b05a'];
+      const cloakBase = synth ? '#2f2152' : dark ? '#284420' : '#4f7a34';
+      const cloakEdge = synth ? '#ff4fd8' : dark ? '#1a2e14' : '#3a5f27';
       let n = 0;
       for (let row = 0; row < 8; row++) {
         const y = 37 + row * 6, off = row % 2 ? 3 : 0;
@@ -651,8 +656,16 @@
       const left = 'M30,38 C22,38 15.5,41 14,46.5 C12,57 8.5,67 5,78 Q9,79.4 13,78.4 Q17,79.6 21,78.4 L24,78.2 C25.5,66 27.5,55 30,48Z';
       const right = 'M30,38 C38,38 44.5,41 46,46.5 C48,57 51.5,67 55,78 Q51,79.4 47,78.4 Q43,79.6 39,78.4 L36,78.2 C34.5,66 32.5,55 30,48Z';
 
-      const earL = `<path d="M15.5,18.5 C20,10 15,-1 6,-5 C2.5,3 8,13 15.5,18.5Z" fill="#cfd2cc"/><path d="M14,15 C13,9 10,3 7,-1" fill="none" stroke="#b3b7b0" stroke-width="${knight ? 1.4 : 1}"/><path d="M8,3 L11,4 L10.5,8 L7.5,7Z" fill="#6f9c46"/>`;
-      const earR = `<path d="M44.5,18.5 C40,10 45,-1 54,-5 C57.5,3 52,13 44.5,18.5Z" fill="#cfd2cc"/><path d="M46,15 C47,9 50,3 53,-1" fill="none" stroke="#b3b7b0" stroke-width="${knight ? 1.4 : 1}"/><path d="M51,1 L54,1.5 L53,5 L50.5,4Z" fill="#87b05a"/>`;
+      let grid = '';
+      if (synth) {
+        [64, 68, 72.5, 77].forEach(y => grid += `<path d="M0,${y} L60,${y}" stroke="#35e0ff" stroke-width=".7" opacity=".85"/>`);
+        [-40, -26, -13, 0, 13, 26, 40].forEach(dx => grid += `<path d="M${30 + dx * .25},60 L${30 + dx * 1.4},80" stroke="#35e0ff" stroke-width=".7" opacity=".85"/>`);
+      }
+      const patchL = synth ? `<path d="M7,-1 L11.5,0.5" stroke="#ff4fd8" stroke-width="1.3" stroke-linecap="round"/>` : `<path d="M8,3 L11,4 L10.5,8 L7.5,7Z" fill="#6f9c46"/>`;
+      const patchR = synth ? `<path d="M49,-1 L53,-2.5" stroke="#ff4fd8" stroke-width="1.3" stroke-linecap="round"/>` : `<path d="M51,1 L54,1.5 L53,5 L50.5,4Z" fill="#87b05a"/>`;
+
+      const earL = `<path d="M15.5,18.5 C20,10 15,-1 6,-5 C2.5,3 8,13 15.5,18.5Z" fill="#cfd2cc"/><path d="M14,15 C13,9 10,3 7,-1" fill="none" stroke="#b3b7b0" stroke-width="${knight ? 1.4 : 1}"/>${patchL}`;
+      const earR = `<path d="M44.5,18.5 C40,10 45,-1 54,-5 C57.5,3 52,13 44.5,18.5Z" fill="#cfd2cc"/><path d="M46,15 C47,9 50,3 53,-1" fill="none" stroke="#b3b7b0" stroke-width="${knight ? 1.4 : 1}"/>${patchR}`;
       const ears = knight
         ? `<g transform="translate(15.5 18.5) scale(.6) translate(-15.5 -18.5)">${earL}</g><g transform="translate(44.5 18.5) scale(.6) translate(-44.5 -18.5)">${earR}</g>`
         : earL + earR;
@@ -687,24 +700,52 @@
         <path d="M58,4 C60,8 59,11 57,12.5 C56,10 56,7 58,4Z" fill="#87b05a"/>
         <ellipse cx="52.6" cy="56" rx="3.3" ry="3.5" fill="#c9ccc5"/>` : '';
 
+      const visorPath = 'M10.5,23 C10.5,20 13,19.5 16,19.5 L44,19.5 C47,19.5 49.5,20 49.5,23 L49,30 C48.6,33 46,34 43,34 L35,34 C33,34 32,32.5 30,32.5 C28,32.5 27,34 25,34 L17,34 C14,34 11.4,33 11,30Z';
+      const synthBack = synth ? `
+        <path d="M9.5,28 C9.5,6 50.5,6 50.5,28" fill="none" stroke="#1c1830" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M11,22 C13,11 47,11 49,22" fill="none" stroke="#ff4fd8" stroke-width=".8" class="neon"/>` : '';
+      const synthFront = synth ? `
+        <defs><linearGradient id="${id}v" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffd35c"/><stop offset=".45" stop-color="#ff5fa2"/><stop offset="1" stop-color="#7b3cff"/></linearGradient></defs>
+        <path d="${visorPath}" fill="url(#${id}v)" opacity=".82"/>
+        <path d="M12,25.5 L48,25.5 M12.3,28.3 L47.7,28.3 M12.8,31 L47.2,31" stroke="#2f2152" stroke-width=".9" opacity=".55"/>
+        <path d="M14,21.5 L24,21.5" stroke="#fff6e8" stroke-width="1.1" stroke-linecap="round" opacity=".8"/>
+        <path d="${visorPath}" fill="none" stroke="#1c1830" stroke-width="1.1"/>
+        <rect x="5" y="23" width="6" height="10" rx="2.6" fill="#1c1830"/>
+        <rect x="49" y="23" width="6" height="10" rx="2.6" fill="#1c1830"/>
+        <rect x="5.8" y="24" width="4.4" height="8" rx="2" fill="none" stroke="#35e0ff" stroke-width=".9" class="neon"/>
+        <rect x="49.8" y="24" width="4.4" height="8" rx="2" fill="none" stroke="#35e0ff" stroke-width=".9" class="neon"/>
+        <circle cx="30" cy="55" r="4.2" fill="#ffb13d"/>
+        <path d="M25.8,55 A4.2,4.2 0 0 1 34.2,55" fill="#ff5fa2" opacity=".55"/>
+        <path d="M25.8,55 L34.2,55 M26.2,56.8 L33.8,56.8 M26.9,58.4 L33.1,58.4" stroke="#c9ccc5" stroke-width=".9"/>` : '';
+      const synthUnder = synth ? `
+        <path d="M17.6,79 L26.4,79 M33.6,79 L42.4,79" stroke="#35e0ff" stroke-width="1.4" class="neon"/>` : '';
+      const synthGlow = synth ? `
+        <path d="${left}" fill="none" stroke="#ff4fd8" stroke-width="2.6" opacity=".28"/>
+        <path d="${right}" fill="none" stroke="#ff4fd8" stroke-width="2.6" opacity=".28"/>` : '';
+      const noseY = synth ? 36.6 : 31.8;
+
       return `<svg class="sp" viewBox="0 -14 60 104" aria-hidden="true">
         <defs><clipPath id="${id}"><path d="${left}"/><path d="${right}"/></clipPath></defs>
-        <ellipse cx="30" cy="88" rx="16" ry="2.4" fill="rgba(0,0,0,.3)"/>
+        <ellipse cx="30" cy="88" rx="16" ry="2.4" fill="${synth ? 'rgba(255,79,216,.35)' : 'rgba(0,0,0,.3)'}"/>
         <path d="M17,75 L27,75 L25.2,86 C25,87.4 19,87.4 18.8,86Z" fill="#6b4a2e"/>
         <path d="M33,75 L43,75 L41.2,86 C41,87.4 35,87.4 34.8,86Z" fill="#6b4a2e"/>
         <path d="M20,76 L21,86 M23.5,76 L23,85.5 M36,76 L37,86 M39.5,76 L39,85.5" stroke="#4a321f" stroke-width="1"/>
+        ${synthUnder}
         <rect x="20" y="40" width="20" height="39" rx="9" fill="#c9ccc5"/>
         <path d="M28,50 L27,78 M32,50 L33,78" stroke="#b3b7b0" stroke-width="1.2"/>
-        <g clip-path="url(#${id})"><rect x="0" y="36" width="60" height="46" fill="${cloakBase}"/>${moss}</g>
+        ${synthGlow}
+        <g clip-path="url(#${id})"><rect x="0" y="36" width="60" height="46" fill="${cloakBase}"/>${moss}${grid}</g>
         <path d="${left}" fill="none" stroke="${cloakEdge}" stroke-width="0.9"/>
         <path d="${right}" fill="none" stroke="${cloakEdge}" stroke-width="0.9"/>
-        <path d="M30,48 C27.5,55 25.5,66 24,78.2 M30,48 C32.5,55 34.5,66 36,78.2" fill="none" stroke="#2f4e20" stroke-width="1.3"/>
+        <path d="M30,48 C27.5,55 25.5,66 24,78.2 M30,48 C32.5,55 34.5,66 36,78.2" fill="none" stroke="${synth ? '#35e0ff' : '#2f4e20'}" stroke-width="${synth ? 1 : 1.3}"/>
+        ${synthBack}
         <g class="ears">${antlers}${ears}</g>
         <ellipse cx="30" cy="28" rx="22" ry="14.5" fill="#b9bdb6"/>
         <ellipse cx="30" cy="26.6" rx="21.4" ry="13.2" fill="#cfd2cc"/>
         <ellipse cx="19" cy="18.5" rx="4" ry="1.6" fill="#e2e4df" transform="rotate(-20 19 18.5)"/>
         ${eyes}
-        <path d="M28.9,31.8 L31.1,31.8" stroke="#7d807a" stroke-width="1.1" stroke-linecap="round"/>
+        ${synthFront}
+        <path d="M28.9,${noseY} L31.1,${noseY}" stroke="#7d807a" stroke-width="1.1" stroke-linecap="round"/>
         ${gear}
         ${staffSVG}
       </svg>`;
