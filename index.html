@@ -205,6 +205,29 @@
               mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.6) 12%, #000 34%);
     }
 
+    /* Glowing runes on each tree */
+      @font-face {
+      font-family: 'Obojima';
+      src: url('font/ObojimaGlyphs-Regular.ttf') format('truetype');
+    }
+
+    .tree-runes {
+      position: absolute;
+      z-index: 1;
+      left: 50%;
+      bottom: 35px; /* Anchors text to the trunk below the hollow */
+      transform: translateX(-50%);
+      font-family: 'Obojima', monospace;
+      color: var(--glow); /* Uses your existing glowing green-yellow variable */
+      text-shadow: 0 0 6px var(--glow), 0 0 12px var(--glow), 0 0 18px rgba(214, 242, 143, 0.6);
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      font-size: 1.15rem;
+      letter-spacing: 4px;
+      pointer-events: none;
+      opacity: 0.9;
+    }
+    
     /* Moss and ferns that the roots sink into; wide enough to merge with neighbours */
     .floor {
       position: absolute;
@@ -822,6 +845,10 @@
       floor.innerHTML = floorSVG(40 + i * 13);
       card.appendChild(floor);
 
+      const runes = document.createElement('div');
+      runes.className = 'tree-runes';
+      card.appendChild(runes);
+
       // Every other tree gets a spirit sitting on its roots
       if (i % 2 === 0 && !disabled) {
         const s = document.createElement('div');
@@ -1086,6 +1113,21 @@
       ctx.globalAlpha = 1;
 
       pvx *= 0.9; pvy *= 0.9;
+      /* ---------- Tree Runes Animation ---------- */
+    const runeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    document.querySelectorAll('.tree-runes').forEach(el => {
+      const updateRunes = () => {
+        let str = '';
+        const length = 4 + Math.floor(Math.random() * 2); // 4 to 5 characters tall
+        for (let j = 0; j < length; j++) {
+          str += runeChars.charAt(Math.floor(Math.random() * runeChars.length));
+        }
+        el.textContent = str;
+        // Schedule next update slowly, between 800ms and 1500ms
+        setTimeout(updateRunes, 800 + Math.random() * 700); 
+      };
+      updateRunes();
+    });
       requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
