@@ -29,9 +29,12 @@
       align-items: center;
       padding: 10px 12px;
       background-color: #1e1e1e;
+      background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('images/header-banner.jpg');
+      background-size: cover;
+      background-position: center;
       box-shadow: 0 2px 5px rgba(0,0,0,0.5);
       z-index: 10;
-      height: 50px;
+      height: 60px;
       flex-shrink: 0;
     }
 
@@ -46,7 +49,7 @@
       text-decoration: none;
       font-size: 1.2rem;
       padding: 4px 8px;
-      background-color: #2a2a2a;
+      background-color: rgba(42, 42, 42, 0.8);
       border: 1px solid #444;
       border-radius: 6px;
       display: flex;
@@ -57,6 +60,7 @@
     header h1 {
       font-size: 1rem;
       font-weight: 600;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
 
     .header-actions {
@@ -224,10 +228,28 @@
       margin-top: 15px;
     }
 
-    .btn-secondary {
-      background-color: #333;
-      border-color: #555;
+    /* Side-by-Side Container for Export & Import */
+    .json-actions {
+      display: flex;
+      gap: 8px;
       width: 100%;
+    }
+
+    .btn-small {
+      flex: 1;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      font-weight: normal;
+      background-color: #2a2a2a;
+      border: 1px solid #444;
+      color: #aaa;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-small:active {
+      background-color: #3a3a3a;
+      color: #fff;
     }
 
     .btn-reset-global {
@@ -269,8 +291,11 @@
       <div id="global-list"></div>
       
       <div class="modal-actions">
-        <button class="btn-action btn-secondary" onclick="exportGlobalJSON()">Export Global (JSON)</button>
-        <button class="btn-action btn-secondary" onclick="document.getElementById('file-input-global').click()">Import Global (JSON)</button>
+        <!-- Compact Side-by-Side Import & Export Buttons -->
+        <div class="json-actions">
+          <button class="btn-small" onclick="exportGlobalJSON()">Export JSON</button>
+          <button class="btn-small" onclick="document.getElementById('file-input-global').click()">Import JSON</button>
+        </div>
         <button class="btn-action btn-reset-global" onclick="resetGlobalTotals()">Reset Global History</button>
       </div>
     </div>
@@ -382,7 +407,6 @@
       }
     }
 
-    /* Export Global Totals as JSON */
     function exportGlobalJSON() {
       const globalTotals = JSON.parse(localStorage.getItem('cd_global_totals')) || {};
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(globalTotals, null, 2));
@@ -396,7 +420,6 @@
       downloadAnchor.remove();
     }
 
-    /* Import & Merge Global Totals JSON */
     function importGlobalJSON(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -408,7 +431,6 @@
           if (typeof importedTotals === 'object' && !Array.isArray(importedTotals)) {
             let currentTotals = JSON.parse(localStorage.getItem('cd_global_totals')) || {};
 
-            // Merge values together so you don't lose existing data on this device
             for (const [key, val] of Object.entries(importedTotals)) {
               currentTotals[key] = (currentTotals[key] || 0) + val;
             }
