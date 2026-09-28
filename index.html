@@ -37,7 +37,7 @@
       justify-content: center;
     }
 
-    /* Base Card Style */
+    /* Base Card Style with 600px Max Width */
     .app-card {
       position: relative;
       display: flex;
@@ -54,7 +54,7 @@
       background-position: center;
       background-repeat: no-repeat;
       transition: transform 0.2s ease, border-color 0.2s ease;
-      max-width: 450px;
+      max-width: 600px;
       width: 100%;
       justify-self: center;
     }
@@ -73,9 +73,22 @@
       z-index: 2;
     }
 
+    .card-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .card-icon {
+      width: 22px;
+      height: 22px;
+      fill: #ffffff;
+      flex-shrink: 0;
+    }
+
     .app-card h2 {
       font-size: 1.1rem;
-      margin-bottom: 4px;
       text-shadow: 0 2px 4px rgba(0,0,0,0.8);
     }
 
@@ -116,7 +129,13 @@
   <div class="app-grid">
     <a href="tally.html" class="app-card card-tally">
       <div class="app-card-content">
-        <h2>Tally Counter</h2>
+        <div class="card-title-row">
+          <!-- Tally Icon -->
+          <svg class="card-icon" viewBox="0 0 24 24">
+            <path d="M4 4h2v16H4V4zm5 0h2v16H9V4zm5 0h2v16h-2V4zm5 0h2v16h-2V4zM2 18l19-12v2.5L2 20.5V18z"/>
+          </svg>
+          <h2>Tally Counter</h2>
+        </div>
         <p>Custom counter application</p>
       </div>
     </a>
