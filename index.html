@@ -2,114 +2,118 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>App Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Suite</title>
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      user-select: none;
     }
 
     body {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
       background-color: #121212;
       color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
     }
 
-    header {
-      text-align: center;
-      margin-bottom: 24px;
-      padding-top: 10px;
-    }
-
-    header h1 {
-      font-size: 1.8rem;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    header p {
-      color: #aaa;
-      font-size: 0.95rem;
+    h1 {
+      margin-bottom: 20px;
+      font-size: 1.5rem;
     }
 
     .app-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 16px;
       width: 100%;
       max-width: 600px;
-      margin: 0 auto;
     }
 
+    /* Base Card Style */
     .app-card {
-      background-color: #1e1e1e;
-      border: 1px solid #2a2a2a;
-      border-radius: 12px;
-      padding: 20px 16px;
+      position: relative;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      text-align: center;
+      justify-content: flex-end;
+      height: 140px;
+      padding: 16px;
+      border-radius: 12px;
       text-decoration: none;
-      color: #fff;
-      transition: transform 0.15s ease, background-color 0.15s ease;
+      color: white;
+      overflow: hidden;
+      border: 1px solid #333;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    /* Dark Overlay for Text Readability */
+    .app-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.75) 100%);
+      z-index: 1;
+    }
+
+    .app-card-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .app-card h2 {
+      font-size: 1.25rem;
+      margin-bottom: 4px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+
+    .app-card p {
+      font-size: 0.85rem;
+      color: #ddd;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
 
     .app-card:active {
-      transform: scale(0.97);
-      background-color: #282a36;
+      transform: scale(0.98);
+      border-color: #007bff;
     }
 
-    .app-icon {
-      font-size: 2.2rem;
-      margin-bottom: 10px;
+    /* Custom Image Background Paths */
+    .card-tally {
+      background-image: url('images/tally-bg.jpg');
     }
 
-    .app-title {
-      font-size: 1rem;
-      font-weight: 600;
-    }
-
-    .app-card.disabled {
-      opacity: 0.4;
-      pointer-events: none;
-      border-style: dashed;
+    .card-cd {
+      background-image: url('images/CDbutton-bg.webp');
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>My Web Apps</h1>
-    <p>Select an app to open</p>
-  </header>
+  <h1>My Apps</h1>
 
-  <main class="app-grid">
-    <!-- Tally App Link -->
-    <a href="tally.html" class="app-card">
-      <div class="app-icon">🔢</div>
-      <div class="app-title">Tally Counter</div>
+  <div class="app-grid">
+    <a href="tally.html" class="app-card card-tally">
+      <div class="app-card-content">
+        <h2>Tally Counter</h2>
+        <p>Custom counter application</p>
+      </div>
     </a>
 
-    <!-- CD Workout Tally Link -->
-    <a href="CD-workout.html" class="app-card">
-      <div class="app-icon">⚔️</div>
-      <div class="app-title">CD Workout</div>
+    <a href="CD-workout.html" class="app-card card-cd">
+      <div class="app-card-content">
+        <h2>CD Workout</h2>
+        <p>Gamified workout tally tracker</p>
+      </div>
     </a>
-    
-    <!-- Placeholder for Future App 1 -->
-    <div class="app-card disabled">
-      <div class="app-icon">➕</div>
-      <div class="app-title">Coming Soon</div>
-    </div>
-  </main>
+  </div>
 
 </body>
 </html>
