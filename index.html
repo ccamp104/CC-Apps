@@ -215,7 +215,7 @@
       position: absolute;
       z-index: 1;
       left: 50%;
-      bottom: 35px; /* Anchors text to the trunk below the hollow */
+      top: 35px; /* Anchors text to the trunk below the canopy */
       transform: translateX(-50%);
       font-family: 'Obojima', monospace;
       color: var(--glow); /* Uses your existing glowing green-yellow variable */
@@ -1017,7 +1017,21 @@
       }
       if (!reduceMotion) pops.push({ x: e.clientX, y: e.clientY, t: 0 });
     });
-
+    /* ---------- Tree Runes Animation ---------- */
+    const runeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    document.querySelectorAll('.tree-runes').forEach(el => {
+      const updateRunes = () => {
+        let str = '';
+        const length = 4 + Math.floor(Math.random() * 2); // 4 to 5 characters tall
+        for (let j = 0; j < length; j++) {
+          str += runeChars.charAt(Math.floor(Math.random() * runeChars.length));
+        }
+        el.textContent = str;
+        setTimeout(updateRunes, 800 + Math.random() * 700); 
+      };
+      updateRunes();
+    });
+    
     /* ---------- Main loop ---------- */
     const layers = [...document.querySelectorAll('[data-sway]')];
     let lastT = performance.now(), lastScroll = scrollY, sunDim = 0;
@@ -1113,21 +1127,6 @@
       ctx.globalAlpha = 1;
 
       pvx *= 0.9; pvy *= 0.9;
-      /* ---------- Tree Runes Animation ---------- */
-    const runeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    document.querySelectorAll('.tree-runes').forEach(el => {
-      const updateRunes = () => {
-        let str = '';
-        const length = 4 + Math.floor(Math.random() * 2); // 4 to 5 characters tall
-        for (let j = 0; j < length; j++) {
-          str += runeChars.charAt(Math.floor(Math.random() * runeChars.length));
-        }
-        el.textContent = str;
-        // Schedule next update slowly, between 800ms and 1500ms
-        setTimeout(updateRunes, 800 + Math.random() * 700); 
-      };
-      updateRunes();
-    });
       requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
