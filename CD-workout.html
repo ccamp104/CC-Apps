@@ -29,7 +29,7 @@
       align-items: center;
       padding: 10px 12px;
       background-color: #1e1e1e;
-      background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('images/header-banner.jpg');
+      background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url('images/CDbanner-bg.webp');
       background-size: cover;
       background-position: center;
       box-shadow: 0 2px 5px rgba(0,0,0,0.5);
@@ -90,6 +90,11 @@
       border-color: #007bff;
     }
 
+    .btn-add {
+      background-color: #17a2b8;
+      border-color: #17a2b8;
+    }
+
     #counter-container {
       display: flex;
       flex-direction: column;
@@ -142,6 +147,22 @@
       font-weight: 600;
       padding: 3px 6px;
       width: 50%;
+    }
+
+    .counter-title:focus {
+      outline: none;
+      border-color: #007bff;
+      background: rgba(0, 123, 255, 0.1);
+    }
+
+    .btn-delete {
+      background: none;
+      border: none;
+      color: #ff4d4d;
+      font-size: 1.3rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
     }
 
     .counter-body {
@@ -228,7 +249,6 @@
       margin-top: 15px;
     }
 
-    /* Side-by-Side Container for Export & Import */
     .json-actions {
       display: flex;
       gap: 8px;
@@ -272,13 +292,13 @@
     </div>
     <div class="header-actions">
       <button class="btn-action btn-global" onclick="openGlobalModal()">Global</button>
+      <button class="btn-action btn-add" onclick="addCounter()">Add Tally +</button>
       <button class="btn-action btn-log" onclick="logDailyCount()">Log Day</button>
     </div>
   </header>
 
   <div id="counter-container"></div>
 
-  <!-- Hidden File Input for Global Import -->
   <input type="file" id="file-input-global" accept=".json" onchange="importGlobalJSON(event)" />
 
   <!-- Global Modal -->
@@ -291,7 +311,6 @@
       <div id="global-list"></div>
       
       <div class="modal-actions">
-        <!-- Compact Side-by-Side Import & Export Buttons -->
         <div class="json-actions">
           <button class="btn-small" onclick="exportGlobalJSON()">Export JSON</button>
           <button class="btn-small" onclick="document.getElementById('file-input-global').click()">Import JSON</button>
@@ -327,9 +346,10 @@
         card.innerHTML = `
           <div class="counter-header">
             <div class="counter-inputs">
-              <input type="text" class="counter-title" value="${counter.name1 || ''}" readonly />
-              <input type="text" class="counter-title" value="${counter.name2 || ''}" readonly />
+              <input type="text" class="counter-title" value="${counter.name1 || ''}" placeholder="Name 1" onchange="updateName(${counter.id}, 'name1', this.value)" />
+              <input type="text" class="counter-title" value="${counter.name2 || ''}" placeholder="Name 2" onchange="updateName(${counter.id}, 'name2', this.value)" />
             </div>
+            <button class="btn-delete" onclick="deleteCounter(${counter.id})">&times;</button>
           </div>
           <div class="counter-body">
             <button class="btn-count btn-minus" onclick="changeCount(${counter.id}, -1)">-</button>
@@ -340,6 +360,32 @@
         `;
         container.appendChild(card);
       });
+    }
+
+    function addCounter() {
+      counters.push({
+        id: Date.now(),
+        name1: `Custom ${counters.length + 1}`,
+        name2: '',
+        count: 0
+      });
+      saveState();
+      renderCounters();
+    }
+
+    function deleteCounter(id) {
+      if (counters.length === 1) return;
+      counters = counters.filter(c => c.id !== id);
+      saveState();
+      renderCounters();
+    }
+
+    function updateName(id, field, newName) {
+      const counter = counters.find(c => c.id === id);
+      if (counter) {
+        counter[field] = newName;
+        saveState();
+      }
     }
 
     function changeCount(id, delta) {
@@ -365,7 +411,9 @@
       let globalTotals = JSON.parse(localStorage.getItem('cd_global_totals')) || {};
 
       counters.forEach(c => {
-        const key = `${c.name1} / ${c.name2}`;
+        let key = c.name1;
+        if (c.name2) key += ` / ${c.name2}`;
+
         globalTotals[key] = (globalTotals[key] || 0) + c.count;
         c.count = 0;
       });
