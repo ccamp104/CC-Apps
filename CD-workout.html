@@ -86,6 +86,11 @@
       border-color: #007bff;
     }
 
+    .btn-add {
+      background-color: #17a2b8;
+      border-color: #17a2b8;
+    }
+
     #counter-container {
       display: flex;
       flex-direction: column;
@@ -138,6 +143,22 @@
       font-weight: 600;
       padding: 3px 6px;
       width: 50%;
+    }
+
+    .counter-title:focus {
+      outline: none;
+      border-color: #007bff;
+      background: rgba(0, 123, 255, 0.1);
+    }
+
+    .btn-delete {
+      background: none;
+      border: none;
+      color: #ff4d4d;
+      font-size: 1.3rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
     }
 
     .counter-body {
@@ -234,6 +255,7 @@
     </div>
     <div class="header-actions">
       <button class="btn-action btn-global" onclick="openGlobalModal()">Global</button>
+      <button class="btn-action btn-add" onclick="addCounter()">Add Tally +</button>
       <button class="btn-action btn-log" onclick="logDailyCount()">Log Day</button>
     </div>
   </header>
@@ -278,9 +300,10 @@
         card.innerHTML = `
           <div class="counter-header">
             <div class="counter-inputs">
-              <input type="text" class="counter-title" value="${counter.name1 || ''}" readonly />
-              <input type="text" class="counter-title" value="${counter.name2 || ''}" readonly />
+              <input type="text" class="counter-title" value="${counter.name1 || ''}" placeholder="Name 1" onchange="updateName(${counter.id}, 'name1', this.value)" />
+              <input type="text" class="counter-title" value="${counter.name2 || ''}" placeholder="Name 2" onchange="updateName(${counter.id}, 'name2', this.value)" />
             </div>
+            <button class="btn-delete" onclick="deleteCounter(${counter.id})">&times;</button>
           </div>
           <div class="counter-body">
             <button class="btn-count btn-minus" onclick="changeCount(${counter.id}, -1)">-</button>
@@ -293,6 +316,32 @@
       });
     }
 
+    function addCounter() {
+      counters.push({
+        id: Date.now(),
+        name1: `Custom ${counters.length + 1}`,
+        name2: '',
+        count: 0
+      });
+      saveState();
+      renderCounters();
+    }
+
+    function deleteCounter(id) {
+      if (counters.length === 1) return;
+      counters = counters.filter(c => c.id !== id);
+      saveState();
+      renderCounters();
+    }
+
+    function updateName(id, field, newName) {
+      const counter = counters.find(c => c.id === id);
+      if (counter) {
+        counter[field] = newName;
+        saveState();
+      }
+    }
+
     function changeCount(id, delta) {
       const counter = counters.find(c => c.id === id);
       if (counter) {
@@ -302,7 +351,6 @@
       }
     }
 
-    /* Single Card Reset */
     function resetSingleCounter(id) {
       const counter = counters.find(c => c.id === id);
       if (counter) {
@@ -312,13 +360,15 @@
       }
     }
 
-    /* Save Day's Tally & Update Global Count */
     function logDailyCount() {
       const dateStr = new Date().toISOString().slice(0, 10);
       let globalTotals = JSON.parse(localStorage.getItem('cd_global_totals')) || {};
 
       counters.forEach(c => {
-        const key = `${c.name1} / ${c.name2}`;
+        // Build label key based on filled names
+        let key = c.name1;
+        if (c.name2) key += ` / ${c.name2}`;
+
         globalTotals[key] = (globalTotals[key] || 0) + c.count;
         c.count = 0; // Reset active counter after logging
       });
@@ -330,7 +380,6 @@
       alert(`Daily tallies logged for ${dateStr}! Active counters reset to 0.`);
     }
 
-    /* Modal Controls */
     function openGlobalModal() {
       const globalTotals = JSON.parse(localStorage.getItem('cd_global_totals')) || {};
       const container = document.getElementById('global-list');
@@ -354,7 +403,6 @@
       document.getElementById('global-modal').style.display = 'none';
     }
 
-    /* Reset All Global Totals */
     function resetGlobalTotals() {
       if (confirm("Are you sure you want to clear all accumulated Global Totals?")) {
         localStorage.removeItem('cd_global_totals');
