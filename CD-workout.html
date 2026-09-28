@@ -217,11 +217,27 @@
       cursor: pointer;
     }
 
-    .btn-reset-global {
+    .modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
       margin-top: 15px;
+    }
+
+    .btn-secondary {
+      background-color: #333;
+      border-color: #555;
+      width: 100%;
+    }
+
+    .btn-reset-global {
       width: 100%;
       background-color: #dc3545;
       border-color: #dc3545;
+    }
+
+    #file-input-global {
+      display: none;
     }
   </style>
 </head>
@@ -240,6 +256,9 @@
 
   <div id="counter-container"></div>
 
+  <!-- Hidden File Input for Global Import -->
+  <input type="file" id="file-input-global" accept=".json" onchange="importGlobalJSON(event)" />
+
   <!-- Global Modal -->
   <div id="global-modal" class="modal">
     <div class="modal-content">
@@ -248,7 +267,12 @@
         <button class="btn-close" onclick="closeGlobalModal()">X</button>
       </div>
       <div id="global-list"></div>
-      <button class="btn-action btn-reset-global" onclick="resetGlobalTotals()">Reset Global History</button>
+      
+      <div class="modal-actions">
+        <button class="btn-action btn-secondary" onclick="exportGlobalJSON()">Export Global (JSON)</button>
+        <button class="btn-action btn-secondary" onclick="document.getElementById('file-input-global').click()">Import Global (JSON)</button>
+        <button class="btn-action btn-reset-global" onclick="resetGlobalTotals()">Reset Global History</button>
+      </div>
     </div>
   </div>
 
@@ -302,7 +326,6 @@
       }
     }
 
-    /* Single Card Reset */
     function resetSingleCounter(id) {
       const counter = counters.find(c => c.id === id);
       if (counter) {
@@ -312,7 +335,6 @@
       }
     }
 
-    /* Save Day's Tally & Update Global Count */
     function logDailyCount() {
       const dateStr = new Date().toISOString().slice(0, 10);
       let globalTotals = JSON.parse(localStorage.getItem('cd_global_totals')) || {};
@@ -320,7 +342,7 @@
       counters.forEach(c => {
         const key = `${c.name1} / ${c.name2}`;
         globalTotals[key] = (globalTotals[key] || 0) + c.count;
-        c.count = 0; // Reset active counter after logging
+        c.count = 0;
       });
 
       localStorage.setItem('cd_global_totals', JSON.stringify(globalTotals));
@@ -330,7 +352,6 @@
       alert(`Daily tallies logged for ${dateStr}! Active counters reset to 0.`);
     }
 
-    /* Modal Controls */
     function openGlobalModal() {
       const globalTotals = JSON.parse(localStorage.getItem('cd_global_totals')) || {};
       const container = document.getElementById('global-list');
@@ -354,12 +375,56 @@
       document.getElementById('global-modal').style.display = 'none';
     }
 
-    /* Reset All Global Totals */
     function resetGlobalTotals() {
       if (confirm("Are you sure you want to clear all accumulated Global Totals?")) {
         localStorage.removeItem('cd_global_totals');
         openGlobalModal();
       }
+    }
+
+    /* Export Global Totals as JSON */
+    function exportGlobalJSON() {
+      const globalTotals = JSON.parse(localStorage.getItem('cd_global_totals')) || {};
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(globalTotals, null, 2));
+      const dateStr = new Date().toISOString().slice(0, 10);
+      
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `cd_global_totals_${dateStr}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    /* Import & Merge Global Totals JSON */
+    function importGlobalJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedTotals = JSON.parse(e.target.result);
+          if (typeof importedTotals === 'object' && !Array.isArray(importedTotals)) {
+            let currentTotals = JSON.parse(localStorage.getItem('cd_global_totals')) || {};
+
+            // Merge values together so you don't lose existing data on this device
+            for (const [key, val] of Object.entries(importedTotals)) {
+              currentTotals[key] = (currentTotals[key] || 0) + val;
+            }
+
+            localStorage.setItem('cd_global_totals', JSON.stringify(currentTotals));
+            openGlobalModal();
+            alert("Global totals imported and merged successfully!");
+          } else {
+            alert("Invalid global data format.");
+          }
+        } catch (err) {
+          alert("Error loading file. Please select a valid global JSON backup.");
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
     }
 
     renderCounters();
