@@ -27,12 +27,20 @@
       font-size: 1.5rem;
     }
 
+    /* Restored 2-Column Grid Layout */
     .app-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 16px;
       width: 100%;
       max-width: 600px;
+    }
+
+    /* Responsive adjustment for small screen devices */
+    @media (max-width: 480px) {
+      .app-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     /* Base Card Style */
@@ -69,13 +77,13 @@
     }
 
     .app-card h2 {
-      font-size: 1.25rem;
+      font-size: 1.1rem;
       margin-bottom: 4px;
       text-shadow: 0 2px 4px rgba(0,0,0,0.8);
     }
 
     .app-card p {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: #ddd;
       text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
@@ -83,6 +91,15 @@
     .app-card:active {
       transform: scale(0.98);
       border-color: #007bff;
+    }
+
+    /* Disabled / Coming Soon Card Style */
+    .app-card.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+      border-style: dashed;
+      background-color: #1a1a1a;
     }
 
     /* Custom Image Background Paths */
@@ -110,9 +127,16 @@
     <a href="CD-workout.html" class="app-card card-cd">
       <div class="app-card-content">
         <h2>CD Workout</h2>
-        <p>Gamified workout tally tracker</p>
+        <p>Gamified workout tracker</p>
       </div>
     </a>
+
+    <!-- Disabled Coming Soon Card -->
+    <div class="app-card disabled">
+      <div class="app-card-content">
+        <h2>Coming Soon...</h2>
+      </div>
+    </div>
   </div>
 
 </body>
