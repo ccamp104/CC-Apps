@@ -292,7 +292,7 @@
     </div>
     <div class="header-actions">
       <button class="btn-action btn-global" onclick="openGlobalModal()">Global</button>
-      <button class="btn-action btn-add" onclick="addCounter()">Add Tally +</button>
+      <button class="btn-action btn-add" onclick="addCounter()">Add +</button>
       <button class="btn-action btn-log" onclick="logDailyCount()">Log Day</button>
     </div>
   </header>
@@ -312,8 +312,8 @@
       
       <div class="modal-actions">
         <div class="json-actions">
-          <button class="btn-small" onclick="exportGlobalJSON()">Export JSON</button>
           <button class="btn-small" onclick="document.getElementById('file-input-global').click()">Import JSON</button>
+          <button class="btn-small" onclick="exportGlobalJSON()">Export JSON</button>
         </div>
         <button class="btn-action btn-reset-global" onclick="resetGlobalTotals()">Reset Global History</button>
       </div>
