@@ -23,7 +23,6 @@
       overflow: hidden;
     }
 
-    /* Fixed Header with Action Buttons */
     header {
       display: flex;
       justify-content: space-between;
@@ -46,7 +45,6 @@
       color: #ffffff;
       text-decoration: none;
       font-size: 1.2rem;
-      line-height: 1;
       padding: 4px 8px;
       background-color: #2a2a2a;
       border: 1px solid #444;
@@ -54,11 +52,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    .btn-home:active {
-      background-color: #007bff;
-      border-color: #007bff;
     }
 
     header h1 {
@@ -83,62 +76,16 @@
       cursor: pointer;
     }
 
-    .btn-add {
+    .btn-log {
+      background-color: #28a745;
+      border-color: #28a745;
+    }
+
+    .btn-global {
       background-color: #007bff;
       border-color: #007bff;
     }
 
-    /* Save Dropdown Menu Styling */
-    .dropdown {
-      position: relative;
-      display: inline-block;
-    }
-
-    .dropdown-content {
-      display: none;
-      position: absolute;
-      right: 0;
-      top: 110%;
-      background-color: #252525;
-      min-width: 120px;
-      box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
-      border-radius: 6px;
-      border: 1px solid #3d3d3d;
-      z-index: 20;
-    }
-
-    .dropdown-content button {
-      color: #ffffff;
-      padding: 10px 12px;
-      text-decoration: none;
-      display: block;
-      width: 100%;
-      text-align: left;
-      background: none;
-      border: none;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-    }
-
-    .dropdown-content button:not(:last-child) {
-      border-bottom: 1px solid #333;
-    }
-
-    .dropdown-content button:active {
-      background-color: #007bff;
-    }
-
-    .show {
-      display: block;
-    }
-
-    /* Hidden file input */
-    #file-input {
-      display: none;
-    }
-
-    /* Scrollable Container with Extra Bottom Clearance */
     #counter-container {
       display: flex;
       flex-direction: column;
@@ -148,7 +95,6 @@
       overflow-y: auto;
     }
 
-    /* Base Counter Card */
     .counter-card {
       display: flex;
       flex-direction: column;
@@ -159,7 +105,6 @@
       position: relative;
     }
 
-    /* Alternating Colors */
     .counter-card:nth-child(odd) {
       background-color: #1e1e1e;
       border: 1px solid #2a2a2a;
@@ -170,7 +115,6 @@
       border: 1px solid #343746;
     }
 
-    /* Header Row with Dual Inputs */
     .counter-header {
       display: flex;
       justify-content: space-between;
@@ -196,23 +140,6 @@
       width: 50%;
     }
 
-    .counter-title:focus {
-      outline: none;
-      border-color: #007bff;
-      background: rgba(0, 123, 255, 0.1);
-    }
-
-    .btn-delete {
-      background: none;
-      border: none;
-      color: #ff4d4d;
-      font-size: 1.3rem;
-      cursor: pointer;
-      line-height: 1;
-      padding: 2px 6px;
-    }
-
-    /* Body Layout */
     .counter-body {
       display: flex;
       flex: 1;
@@ -241,24 +168,60 @@
       justify-content: center;
     }
 
-    .btn-count:active {
-      opacity: 0.7;
+    .btn-minus { background-color: #383838; width: 20%; }
+    .btn-plus { background-color: #28a745; width: 40%; }
+    .btn-reset { background-color: #444; width: 15%; font-size: 1.1rem; }
+
+    /* Modal Controls */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.8);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
     }
 
-    .btn-minus {
-      background-color: #383838;
-      width: 18%;
+    .modal-content {
+      background: #1e1e1e;
+      border: 1px solid #444;
+      border-radius: 12px;
+      padding: 20px;
+      width: 90%;
+      max-width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
     }
 
-    .btn-plus {
-      background-color: #28a745;
-      width: 35%;
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
     }
 
-    .btn-reset {
-      background-color: #444;
-      width: 12%;
-      font-size: 0.9rem;
+    .global-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .btn-close {
+      background: #ff4d4d;
+      border: none;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-reset-global {
+      margin-top: 15px;
+      width: 100%;
+      background-color: #dc3545;
+      border-color: #dc3545;
     }
   </style>
 </head>
@@ -270,27 +233,27 @@
       <h1>CD Workout</h1>
     </div>
     <div class="header-actions">
-      <!-- Save Dropdown -->
-      <div class="dropdown">
-        <button class="btn-action" onclick="toggleSaveMenu(event)">Save &#9662;</button>
-        <div id="save-menu" class="dropdown-content">
-          <button onclick="exportJSON()">Save as JSON</button>
-          <button onclick="exportCSV()">Export to CSV</button>
-        </div>
-      </div>
-      
-      <button class="btn-action" onclick="document.getElementById('file-input').click()">Load</button>
-      <button class="btn-action btn-add" onclick="addCounter()">Add Tally +</button>
+      <button class="btn-action btn-global" onclick="openGlobalModal()">Global</button>
+      <button class="btn-action btn-log" onclick="logDailyCount()">Log Day</button>
     </div>
   </header>
 
-  <input type="file" id="file-input" accept=".json" onchange="importData(event)" />
-
   <div id="counter-container"></div>
 
+  <!-- Global Modal -->
+  <div id="global-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Global Totals</h2>
+        <button class="btn-close" onclick="closeGlobalModal()">X</button>
+      </div>
+      <div id="global-list"></div>
+      <button class="btn-action btn-reset-global" onclick="resetGlobalTotals()">Reset Global History</button>
+    </div>
+  </div>
+
   <script>
-    // Always start with the 6 preset workout counters
-    let counters = [
+    const INITIAL_PRESETS = [
       { id: 1, name1: 'Fast travel', name2: '10 squats', count: 0 },
       { id: 2, name1: 'NPC', name2: '5 pushups', count: 0 },
       { id: 3, name1: 'Complete quest', name2: '30s plank', count: 0 },
@@ -298,6 +261,12 @@
       { id: 5, name1: 'Summon a mount', name2: '10 trunk twists', count: 0 },
       { id: 6, name1: 'Dispatch start/finish', name2: '10 Cossack squats', count: 0 }
     ];
+
+    let counters = JSON.parse(localStorage.getItem('cd_active_counters')) || INITIAL_PRESETS;
+
+    function saveState() {
+      localStorage.setItem('cd_active_counters', JSON.stringify(counters));
+    }
 
     function renderCounters() {
       const container = document.getElementById('counter-container');
@@ -309,133 +278,88 @@
         card.innerHTML = `
           <div class="counter-header">
             <div class="counter-inputs">
-              <input type="text" class="counter-title" value="${counter.name1 || ''}" placeholder="Name 1" onchange="updateName(${counter.id}, 'name1', this.value)" />
-              <input type="text" class="counter-title" value="${counter.name2 || ''}" placeholder="Name 2" onchange="updateName(${counter.id}, 'name2', this.value)" />
+              <input type="text" class="counter-title" value="${counter.name1 || ''}" readonly />
+              <input type="text" class="counter-title" value="${counter.name2 || ''}" readonly />
             </div>
-            <button class="btn-delete" onclick="deleteCounter(${counter.id})">&times;</button>
           </div>
           <div class="counter-body">
             <button class="btn-count btn-minus" onclick="changeCount(${counter.id}, -1)">-</button>
             <div class="count-display">${counter.count}</div>
             <button class="btn-count btn-plus" onclick="changeCount(${counter.id}, 1)">+</button>
-            <button class="btn-count btn-reset" onclick="resetCount(${counter.id})">&#8634;</button>
+            <button class="btn-count btn-reset" title="Reset Counter" onclick="resetSingleCounter(${counter.id})">&#8634;</button>
           </div>
         `;
         container.appendChild(card);
       });
     }
 
-    function addCounter() {
-      counters.push({
-        id: Date.now(),
-        name1: `Counter ${counters.length + 1}`,
-        name2: '',
-        count: 0
-      });
-      renderCounters();
-    }
-
     function changeCount(id, delta) {
       const counter = counters.find(c => c.id === id);
       if (counter) {
-        counter.count += delta;
+        counter.count = Math.max(0, counter.count + delta);
+        saveState();
         renderCounters();
       }
     }
 
-    function resetCount(id) {
+    /* Single Card Reset */
+    function resetSingleCounter(id) {
       const counter = counters.find(c => c.id === id);
       if (counter) {
         counter.count = 0;
+        saveState();
         renderCounters();
       }
     }
 
-    function updateName(id, field, newName) {
-      const counter = counters.find(c => c.id === id);
-      if (counter) {
-        counter[field] = newName;
-      }
-    }
+    /* Save Day's Tally & Update Global Count */
+    function logDailyCount() {
+      const dateStr = new Date().toISOString().slice(0, 10);
+      let globalTotals = JSON.parse(localStorage.getItem('cd_global_totals')) || {};
 
-    function deleteCounter(id) {
-      if (counters.length === 1) return;
-      counters = counters.filter(c => c.id !== id);
-      renderCounters();
-    }
-
-    /* Toggle Dropdown Menu */
-    function toggleSaveMenu(event) {
-      event.stopPropagation();
-      document.getElementById("save-menu").classList.toggle("show");
-    }
-
-    /* Close Dropdown when clicking outside */
-    window.onclick = function(event) {
-      if (!event.target.matches('.btn-action')) {
-        const dropdowns = document.getElementsByClassName("dropdown-content");
-        for (let i = 0; i < dropdowns.length; i++) {
-          let openDropdown = dropdowns[i];
-          if (openDropdown.classList.contains('show')) {
-            openDropdown.classList.remove('show');
-          }
-        }
-      }
-    }
-
-    /* Export JSON (Backup) */
-    function exportJSON() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(counters, null, 2));
-      downloadFile(dataStr, `cd_workout_tally_${getDateString()}.json`);
-    }
-
-    /* Export CSV (Spreadsheet) */
-    function exportCSV() {
-      let csvContent = "data:text/csv;charset=utf-8,Counter #,Name 1,Name 2,Count\n";
-      
-      counters.forEach((c, index) => {
-        const name1 = `"${(c.name1 || '').replace(/"/g, '""')}"`;
-        const name2 = `"${(c.name2 || '').replace(/"/g, '""')}"`;
-        csvContent += `${index + 1},${name1},${name2},${c.count}\n`;
+      counters.forEach(c => {
+        const key = `${c.name1} / ${c.name2}`;
+        globalTotals[key] = (globalTotals[key] || 0) + c.count;
+        c.count = 0; // Reset active counter after logging
       });
 
-      downloadFile(encodeURI(csvContent), `cd_workout_tally_${getDateString()}.csv`);
+      localStorage.setItem('cd_global_totals', JSON.stringify(globalTotals));
+      saveState();
+
+      renderCounters();
+      alert(`Daily tallies logged for ${dateStr}! Active counters reset to 0.`);
     }
 
-    function downloadFile(uri, filename) {
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", uri);
-      downloadAnchor.setAttribute("download", filename);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    }
+    /* Modal Controls */
+    function openGlobalModal() {
+      const globalTotals = JSON.parse(localStorage.getItem('cd_global_totals')) || {};
+      const container = document.getElementById('global-list');
+      container.innerHTML = '';
 
-    function getDateString() {
-      return new Date().toISOString().slice(0, 10);
-    }
-
-    /* Import JSON File */
-    function importData(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const loadedCounters = JSON.parse(e.target.result);
-          if (Array.isArray(loadedCounters)) {
-            counters = loadedCounters;
-            renderCounters();
-          } else {
-            alert("Invalid file format.");
-          }
-        } catch (err) {
-          alert("Error loading file. Make sure it is a valid backup file.");
+      if (Object.keys(globalTotals).length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#888;">No global history yet. Tap "Log Day" to log your workouts.</p>';
+      } else {
+        for (const [key, val] of Object.entries(globalTotals)) {
+          const row = document.createElement('div');
+          row.className = 'global-row';
+          row.innerHTML = `<span>${key}</span><strong>${val}</strong>`;
+          container.appendChild(row);
         }
-      };
-      reader.readAsText(file);
-      event.target.value = '';
+      }
+
+      document.getElementById('global-modal').style.display = 'flex';
+    }
+
+    function closeGlobalModal() {
+      document.getElementById('global-modal').style.display = 'none';
+    }
+
+    /* Reset All Global Totals */
+    function resetGlobalTotals() {
+      if (confirm("Are you sure you want to clear all accumulated Global Totals?")) {
+        localStorage.removeItem('cd_global_totals');
+        openGlobalModal();
+      }
     }
 
     renderCounters();
