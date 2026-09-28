@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Hi-Fi App Console | 1970s Stereo Receiver</title>
+  <title>Regie 308 | Hi-Fi Console</title>
   <style>
     :root {
-      --bg-dark: #18181a;
-      --panel-aluminum: #2c2d31;
-      --aluminum-light: #44464d;
-      --aluminum-dark: #1e1f22;
-      --accent-orange: #ff5500;
+      --bg-dark: #121315;
+      --panel-mat: #1e2023;
+      --panel-dark: #151618;
+      --accent-red: #d62828;
+      --accent-yellow: #f2b705;
+      --btn-white: #e8e8e8;
       --crt-green: #33ff66;
-      --crt-glow: rgba(51, 255, 102, 0.4);
-      --dial-metal: #383a3f;
+      --crt-glow: rgba(51, 255, 102, 0.35);
+      --text-muted: #8e929a;
     }
 
     * {
@@ -27,10 +28,9 @@
 
     body {
       background-color: var(--bg-dark);
-      background-image: 
-        radial-gradient(circle at 50% 30%, #26272b 0%, #121214 100%);
+      background-image: radial-gradient(circle at 50% 35%, #222429 0%, #0d0e0f 100%);
       color: #e0e0e0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -40,151 +40,114 @@
       padding: 20px;
     }
 
-    /* Outer Isometric Stage Container */
+    /* Isometric Perspective Stage Container */
     .viewport-stage {
-      perspective: 1200px;
+      perspective: 1000px;
       width: 100%;
-      max-width: 900px;
+      max-width: 960px;
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 40px 0;
+      padding: 30px 0;
     }
 
-    /* Isometric Hi-Fi Chassis */
+    /* Main Receiver Body Chassis */
     .hifi-chassis {
       position: relative;
       width: 100%;
-      max-width: 820px;
-      background: linear-gradient(135deg, var(--panel-aluminum) 0%, var(--aluminum-dark) 100%);
-      border-radius: 8px;
+      max-width: 880px;
+      background: linear-gradient(165deg, var(--panel-mat) 0%, var(--panel-dark) 100%);
+      border-radius: 12px;
       box-shadow: 
-        -20px 25px 50px rgba(0, 0, 0, 0.8),
-        -5px 10px 15px rgba(0, 0, 0, 0.5),
-        inset 0 1px 1px rgba(255, 255, 255, 0.2);
-      transform: rotateX(22deg) rotateY(-18deg) rotateZ(3deg);
+        -25px 35px 60px rgba(0, 0, 0, 0.85),
+        -5px 10px 20px rgba(0, 0, 0, 0.6),
+        inset 0 1px 1px rgba(255, 255, 255, 0.12);
+      transform: rotateX(20deg) rotateY(-14deg) rotateZ(2deg);
       transform-style: preserve-3d;
-      transition: transform 0.5s ease;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 28px;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 32px 36px 36px 36px;
     }
 
-    /* Subtle isometric hover shift on desktop */
     @media (hover: hover) {
       .hifi-chassis:hover {
-        transform: rotateX(18deg) rotateY(-12deg) rotateZ(2deg) translateY(-5px);
+        transform: rotateX(15deg) rotateY(-8deg) rotateZ(1deg) translateY(-4px);
       }
     }
 
-    /* 3D Thickness Side Plates */
+    /* 3D Chassis Thickness Plates */
     .hifi-chassis::before {
       content: "";
       position: absolute;
       left: 0;
-      bottom: -16px;
+      bottom: -14px;
       width: 100%;
-      height: 16px;
-      background: #111214;
+      height: 14px;
+      background: #0d0e0f;
       transform: rotateX(-90deg);
       transform-origin: bottom;
-      border-bottom-left-radius: 8px;
-      border-bottom-right-radius: 8px;
-      box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
     }
 
     .hifi-chassis::after {
       content: "";
       position: absolute;
-      right: -16px;
+      right: -14px;
       top: 0;
-      width: 16px;
+      width: 14px;
       height: 100%;
-      background: #0d0e10;
+      background: #080809;
       transform: rotateY(90deg);
       transform-origin: right;
-      border-top-right-radius: 8px;
-      border-bottom-right-radius: 8px;
+      border-top-right-radius: 12px;
+      border-bottom-right-radius: 12px;
     }
 
-    /* Top Brand Header */
-    .brand-header {
+    /* Slotted Top Grill Vents */
+    .top-grill {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid #3a3c42;
-      padding-bottom: 14px;
+      gap: 5px;
       margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
-    .brand-logo {
-      font-weight: 800;
-      font-size: 1.4rem;
-      letter-spacing: 2px;
-      color: #f0f0f0;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .grill-slot {
+      height: 6px;
+      flex: 1;
+      background: #0f1012;
+      border-radius: 3px;
+      box-shadow: inset 0 2px 3px rgba(0,0,0,0.9);
     }
 
-    .brand-logo .accent-dot {
-      width: 12px;
-      height: 12px;
-      background-color: var(--accent-orange);
-      border-radius: 50%;
-      box-shadow: 0 0 8px var(--accent-orange);
-    }
-
-    .model-number {
-      font-family: monospace;
-      font-size: 0.85rem;
-      color: #888a90;
-      letter-spacing: 1.5px;
-    }
-
-    /* Main Receiver Front Panel Layout */
-    .panel-grid {
+    /* Main Front Grid */
+    .console-grid {
       display: grid;
-      grid-template-columns: 1fr 1.2fr;
-      gap: 24px;
+      grid-template-columns: 320px 1fr;
+      gap: 36px;
+      align-items: start;
     }
 
-    /* CRT Oscilloscope Screen Box */
-    .scope-box {
-      background: #0a0e0b;
-      border: 4px solid #222428;
-      border-radius: 12px;
-      padding: 12px;
-      position: relative;
+    /* Oscilloscope CRT Box */
+    .scope-panel {
+      background: #090b0c;
+      border: 3px solid #282a2e;
+      border-radius: 10px;
+      padding: 14px;
       box-shadow: 
-        inset 0 0 15px rgba(0, 0, 0, 0.9),
-        0 4px 10px rgba(0, 0, 0, 0.5);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+        inset 0 0 20px rgba(0, 0, 0, 0.95),
+        0 6px 12px rgba(0,0,0,0.5);
     }
 
-    .scope-bezel {
+    .scope-frame {
       position: relative;
       width: 100%;
-      aspect-ratio: 4/3;
-      background: #020b04;
-      border-radius: 50% / 10%;
+      aspect-ratio: 4 / 3;
+      background: #010803;
+      border-radius: 6px;
       overflow: hidden;
-      border: 2px solid #1a1c20;
-      box-shadow: inset 0 0 20px rgba(0,255,100,0.15);
-    }
-
-    /* CRT Screen Overlay & Reticle Grid */
-    .scope-bezel::after {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: 
-        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-      background-size: 100% 4px, 6px 100%;
-      pointer-events: none;
+      border: 1px solid #18221a;
     }
 
     canvas#oscilloscope {
@@ -193,212 +156,254 @@
       display: block;
     }
 
-    .scope-readout {
-      margin-top: 10px;
-      width: 100%;
+    .scope-footer {
       display: flex;
       justify-content: space-between;
-      font-family: monospace;
-      font-size: 0.75rem;
+      margin-top: 10px;
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.72rem;
       color: var(--crt-green);
-      text-shadow: 0 0 5px var(--crt-glow);
+      text-shadow: 0 0 6px var(--crt-glow);
     }
 
-    /* Right Controls Area */
-    .controls-grid {
+    /* Controls Layout */
+    .controls-panel {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 28px;
     }
 
-    .control-group-title {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: #888a90;
-      margin-bottom: 8px;
+    /* Cylindrical Push Studs */
+    .stud-buttons-row {
+      display: flex;
+      gap: 22px;
+      align-items: center;
+      padding: 10px 0;
     }
 
-    /* App Selector Push-Buttons */
-    .button-bank {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-    }
-
-    .hifi-btn {
-      background: linear-gradient(180deg, #4a4c52 0%, #222327 100%);
-      border: 1px solid #5a5c64;
-      border-bottom: 3px solid #151618;
-      border-radius: 4px;
-      color: #d0d0d0;
-      padding: 12px 8px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      text-align: center;
-      cursor: pointer;
-      text-decoration: none;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.4);
-      transition: all 0.08s ease;
+    .stud-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
     }
 
-    .hifi-btn .led-indicator {
-      width: 6px;
-      height: 6px;
+    .stud-well {
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
-      background-color: #222;
-      box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
-    }
-
-    .hifi-btn.active .led-indicator {
-      background-color: var(--crt-green);
-      box-shadow: 0 0 8px var(--crt-green);
-    }
-
-    .hifi-btn:active, .hifi-btn.pressed {
-      transform: translateY(2px);
-      border-bottom-width: 1px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.6);
-      background: linear-gradient(180deg, #222327 0%, #3a3b40 100%);
-    }
-
-    /* Rotary Dial / Knobs Section */
-    .dials-row {
+      background: #111214;
+      box-shadow: 
+        inset 0 4px 8px rgba(0, 0, 0, 0.95),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.1);
       display: flex;
-      justify-content: space-around;
       align-items: center;
-      background: rgba(0,0,0,0.2);
-      padding: 14px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.04);
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
     }
 
-    .knob-container {
+    .stud-cap {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      position: relative;
+      transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.12s ease;
+      transform: translateY(-4px);
+    }
+
+    .stud-cap::after {
+      content: "";
+      position: absolute;
+      top: 3px; left: 3px; right: 3px; bottom: 3px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      mask-image: radial-gradient(circle, transparent 50%, black 100%);
+      -webkit-mask-image: radial-gradient(circle, transparent 50%, black 100%);
+    }
+
+    .stud-cap.red {
+      background: linear-gradient(180deg, #e63946 0%, #a81c27 100%);
+      box-shadow: 0 5px 8px rgba(0,0,0,0.6), inset 0 2px 2px rgba(255,255,255,0.4);
+    }
+
+    .stud-cap.yellow {
+      background: linear-gradient(180deg, #f4a261 0%, #c67d10 100%);
+      box-shadow: 0 5px 8px rgba(0,0,0,0.6), inset 0 2px 2px rgba(255,255,255,0.4);
+    }
+
+    .stud-cap.white {
+      background: linear-gradient(180deg, #f0f0f0 0%, #a3a5a8 100%);
+      box-shadow: 0 5px 8px rgba(0,0,0,0.6), inset 0 2px 2px rgba(255,255,255,0.6);
+    }
+
+    .stud-container.active .stud-cap {
+      transform: translateY(1px);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.8), inset 0 1px 2px rgba(0,0,0,0.4);
+    }
+
+    .stud-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: lowercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stud-container.active .stud-label {
+      color: #ffffff;
+    }
+
+    /* Rotary Knobs */
+    .knobs-row {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .knob-unit {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
-    .knob {
-      width: 58px;
-      height: 58px;
+    .knob-dial {
+      width: 56px;
+      height: 56px;
       border-radius: 50%;
       background: conic-gradient(
         from 0deg,
-        #2a2b2f, #484a50, #2a2b2f, #1e1f22, #484a50, #2a2b2f
+        #2d2f34, #4a4d54, #2d2f34, #1a1b1d, #4a4d54, #2d2f34
       );
-      border: 2px solid #55575e;
+      border: 1px solid #4a4c52;
       box-shadow: 
-        0 6px 10px rgba(0,0,0,0.6),
-        inset 0 2px 3px rgba(255,255,255,0.3);
+        0 6px 12px rgba(0,0,0,0.6),
+        inset 0 2px 3px rgba(255,255,255,0.25);
       position: relative;
       cursor: grab;
       touch-action: none;
     }
 
-    .knob:active {
+    .knob-dial:active {
       cursor: grabbing;
     }
 
-    .knob-indicator {
+    .knob-notch {
       position: absolute;
-      top: 6px;
+      top: 5px;
       left: 50%;
       transform: translateX(-50%);
       width: 3px;
-      height: 14px;
+      height: 12px;
       background-color: #ffffff;
       border-radius: 2px;
-      box-shadow: 0 0 2px rgba(0,0,0,0.8);
+      box-shadow: 0 0 3px rgba(0,0,0,0.8);
     }
 
     .knob-label {
-      font-size: 0.65rem;
+      font-size: 0.75rem;
       font-weight: 600;
-      letter-spacing: 1px;
-      color: #a0a2a8;
-      text-transform: uppercase;
+      color: var(--text-muted);
+      text-transform: lowercase;
     }
 
-    /* Fader / Sliders */
-    .faders-row {
+    /* Linear Sliders */
+    .sliders-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      gap: 20px;
     }
 
-    .fader-track-container {
+    .fader-group {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
 
-    .fader-slot {
+    .fader-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: lowercase;
+    }
+
+    .fader-track {
       position: relative;
-      height: 24px;
-      background: #121315;
+      height: 22px;
+      background: #111214;
       border-radius: 4px;
-      border: 1px solid #33353a;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+      border: 1px solid #2e3035;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.9);
       display: flex;
       align-items: center;
       padding: 0 4px;
     }
 
-    .fader-knob-cap {
+    .fader-handle {
       position: absolute;
-      width: 20px;
-      height: 32px;
-      background: linear-gradient(90deg, #3a3b40 0%, #686b73 50%, #2a2b2e 100%);
-      border: 1px solid #787b85;
+      width: 18px;
+      height: 30px;
+      background: linear-gradient(90deg, #3a3c42 0%, #686a73 50%, #2a2c30 100%);
+      border: 1px solid #787a83;
       border-radius: 2px;
       box-shadow: 0 3px 6px rgba(0,0,0,0.7);
       cursor: pointer;
       top: 50%;
       transform: translateY(-50%);
-      left: 20%;
+      left: 30%;
     }
 
-    .fader-knob-cap::after {
+    .fader-handle::after {
       content: "";
       position: absolute;
       top: 50%;
       left: 0; right: 0;
       height: 2px;
-      background: var(--accent-orange);
+      background: var(--accent-red);
       transform: translateY(-50%);
     }
 
-    /* Footer Navigation / Instructions */
-    .hifi-footer {
-      margin-top: 28px;
-      text-align: center;
+    .page-footer {
+      margin-top: 24px;
       font-size: 0.8rem;
-      color: #666870;
+      color: #55575e;
+      text-align: center;
     }
 
-    /* Mobile Responsive Optimizations */
+    /* Mobile Adaptations */
     @media (max-width: 768px) {
       .hifi-chassis {
-        transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); /* Flatten slightly on phones for usability */
-        padding: 16px;
+        transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+        padding: 20px;
       }
-      
-      .panel-grid {
+
+      .console-grid {
         grid-template-columns: 1fr;
+        gap: 24px;
       }
 
-      .button-bank {
-        grid-template-columns: repeat(3, 1fr);
+      .stud-buttons-row {
+        gap: 12px;
+        justify-content: space-between;
       }
 
-      .knob {
+      .stud-well {
+        width: 38px;
+        height: 38px;
+      }
+
+      .stud-cap {
+        width: 30px;
+        height: 30px;
+      }
+
+      .knobs-row {
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .knob-dial {
         width: 48px;
         height: 48px;
       }
@@ -410,93 +415,115 @@
   <div class="viewport-stage">
     <div class="hifi-chassis">
       
-      <!-- Top Brand Header -->
-      <div class="brand-header">
-        <div class="brand-logo">
-          <span class="accent-dot"></span>
-          BRAUN REGIE 308
-        </div>
-        <div class="model-number">HI-FI APPS // SOLID STATE 1976</div>
+      <!-- Top Grill Vents -->
+      <div class="top-grill">
+        <div class="grill-slot"></div><div class="grill-slot"></div><div class="grill-slot"></div>
+        <div class="grill-slot"></div><div class="grill-slot"></div><div class="grill-slot"></div>
+        <div class="grill-slot"></div><div class="grill-slot"></div><div class="grill-slot"></div>
       </div>
 
-      <!-- Main Receiver Grid -->
-      <div class="panel-grid">
+      <div class="console-grid">
         
-        <!-- Left Column: CRT Oscilloscope -->
-        <div class="scope-box">
-          <div class="scope-bezel">
+        <!-- CRT Oscilloscope Area -->
+        <div class="scope-panel">
+          <div class="scope-frame">
             <canvas id="oscilloscope"></canvas>
           </div>
-          <div class="scope-readout">
-            <span id="scope-mode">MODE: SINE WAVE</span>
-            <span id="scope-freq">FREQ: 440 Hz</span>
+          <div class="scope-footer">
+            <span id="scope-mode">mode: fm tuner</span>
+            <span id="scope-freq">freq: 98.5 mhz</span>
           </div>
         </div>
 
-        <!-- Right Column: Interactive Controls -->
-        <div class="controls-grid">
+        <!-- Right Controls Area -->
+        <div class="controls-panel">
           
-          <!-- App Selection Buttons -->
-          <div>
-            <div class="control-group-title">App Select / Function</div>
-            <div class="button-bank">
-              <a href="tally.html" class="hifi-btn active" id="btn-tally" data-mode="TALLY COUNTER" data-freq="88.5 MHz">
-                <span class="led-indicator"></span>
-                TALLY
-              </a>
-              <a href="CD-workout.html" class="hifi-btn" id="btn-cd" data-mode="CD WORKOUT" data-freq="102.1 MHz">
-                <span class="led-indicator"></span>
-                CD WORKOUT
-              </a>
-              <button class="hifi-btn" id="btn-aux" data-mode="AUX / SCOPE" data-freq="108.0 MHz">
-                <span class="led-indicator"></span>
-                AUX / TEST
-              </button>
+          <!-- Cylindrical Push Studs -->
+          <div class="stud-buttons-row">
+            
+            <div class="stud-container active" data-mode="fm tuner" data-freq="98.5 mhz">
+              <div class="stud-well">
+                <div class="stud-cap red"></div>
+              </div>
+              <span class="stud-label">fm</span>
             </div>
+
+            <div class="stud-container" data-mode="kw shortwave" data-freq="11.8 mhz">
+              <div class="stud-well">
+                <div class="stud-cap yellow"></div>
+              </div>
+              <span class="stud-label">kw</span>
+            </div>
+
+            <div class="stud-container" data-mode="mw mediumwave" data-freq="820 khz">
+              <div class="stud-well">
+                <div class="stud-cap white"></div>
+              </div>
+              <span class="stud-label">mw</span>
+            </div>
+
+            <div class="stud-container" data-mode="lw longwave" data-freq="210 khz">
+              <div class="stud-well">
+                <div class="stud-cap white"></div>
+              </div>
+              <span class="stud-label">lw</span>
+            </div>
+
+            <div class="stud-container" data-mode="aux / scope" data-freq="1.0 khz">
+              <div class="stud-well">
+                <div class="stud-cap white"></div>
+              </div>
+              <span class="stud-label">aux</span>
+            </div>
+
           </div>
 
           <!-- Rotary Dials -->
-          <div>
-            <div class="control-group-title">Acoustic Equalizer / Tuning</div>
-            <div class="dials-row">
-              
-              <div class="knob-container">
-                <div class="knob" id="knob-volume" style="transform: rotate(-40deg);">
-                  <div class="knob-indicator"></div>
-                </div>
-                <span class="knob-label">Volume</span>
+          <div class="knobs-row">
+            
+            <div class="knob-unit">
+              <div class="knob-dial" id="knob-volume" style="transform: rotate(-30deg);">
+                <div class="knob-notch"></div>
               </div>
-
-              <div class="knob-container">
-                <div class="knob" id="knob-tuning" style="transform: rotate(10deg);">
-                  <div class="knob-indicator"></div>
-                </div>
-                <span class="knob-label">Tuning</span>
-              </div>
-
-              <div class="knob-container">
-                <div class="knob" id="knob-bass" style="transform: rotate(0deg);">
-                  <div class="knob-indicator"></div>
-                </div>
-                <span class="knob-label">Bass</span>
-              </div>
-
+              <span class="knob-label">volume</span>
             </div>
+
+            <div class="knob-unit">
+              <div class="knob-dial" id="knob-tuning" style="transform: rotate(20deg);">
+                <div class="knob-notch"></div>
+              </div>
+              <span class="knob-label">tuning</span>
+            </div>
+
+            <div class="knob-unit">
+              <div class="knob-dial" id="knob-bass" style="transform: rotate(0deg);">
+                <div class="knob-notch"></div>
+              </div>
+              <span class="knob-label">bass</span>
+            </div>
+
+            <div class="knob-unit">
+              <div class="knob-dial" id="knob-treble" style="transform: rotate(15deg);">
+                <div class="knob-notch"></div>
+              </div>
+              <span class="knob-label">treble</span>
+            </div>
+
           </div>
 
           <!-- Linear Faders -->
-          <div class="faders-row">
-            <div class="fader-track-container">
-              <div class="control-group-title">Balance</div>
-              <div class="fader-slot" id="fader-balance">
-                <div class="fader-knob-cap" id="fader-cap-1" style="left: 45%;"></div>
+          <div class="sliders-row">
+            <div class="fader-group">
+              <span class="fader-label">balance</span>
+              <div class="fader-track" id="fader-balance">
+                <div class="fader-handle" id="fader-cap-1" style="left: 50%;"></div>
               </div>
             </div>
 
-            <div class="fader-track-container">
-              <div class="control-group-title">Filter</div>
-              <div class="fader-slot" id="fader-filter">
-                <div class="fader-knob-cap" id="fader-cap-2" style="left: 70%;"></div>
+            <div class="fader-group">
+              <span class="fader-label">filter</span>
+              <div class="fader-track" id="fader-filter">
+                <div class="fader-handle" id="fader-cap-2" style="left: 30%;"></div>
               </div>
             </div>
           </div>
@@ -508,37 +535,31 @@
     </div>
   </div>
 
-  <div class="hifi-footer">
-    Drag knobs or move sliders to modulate oscilloscope response. Tap buttons to trigger relay click effects.
+  <div class="page-footer">
+    Regie Receiver Demo Console — Press studs or turn dials to interact with CRT output.
   </div>
 
-  <!-- JavaScript Logic -->
   <script>
-    // --- Web Audio API Mechanical Tactile Click Synthesizer ---
+    // Audio Synthesizer
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
 
     function initAudio() {
-      if (!audioCtx) {
-        audioCtx = new AudioContext();
-      }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
+      if (!audioCtx) audioCtx = new AudioContext();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // Synthesize a heavy, satisfying metallic relay click
-    function playClickSound(frequency = 600, duration = 0.012) {
+    function playThudSound(freq = 150, duration = 0.025) {
       try {
         initAudio();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + duration);
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + duration);
         
-        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
         
         osc.connect(gain);
@@ -546,18 +567,16 @@
         
         osc.start();
         osc.stop(audioCtx.currentTime + duration);
-      } catch(e) {
-        // Fallback gracefully if audio is muted or restricted
-      }
+      } catch(e) {}
     }
 
-    // --- Interactive Controls State ---
-    let volumeVal = 50;
+    // State Variables
+    let volumeVal = 60;
     let tuningVal = 440;
-    let bassVal = 10;
-    let activeMode = "TALLY COUNTER";
+    let bassVal = 20;
+    let activeMode = "fm tuner";
 
-    // Scope Display & Canvas
+    // Oscilloscope Canvas
     const canvas = document.getElementById('oscilloscope');
     const ctx = canvas.getContext('2d');
     const scopeModeTxt = document.getElementById('scope-mode');
@@ -570,47 +589,45 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // --- Oscilloscope CRT Animation Render Loop ---
     let phase = 0;
-    function renderOscilloscope() {
-      ctx.fillStyle = 'rgba(2, 11, 4, 0.25)'; // Phosphor persistence effect
+    function renderScope() {
+      ctx.fillStyle = 'rgba(1, 8, 3, 0.22)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw Grid Reticle Lines
-      ctx.strokeStyle = 'rgba(51, 255, 102, 0.1)';
+      // Grid
+      ctx.strokeStyle = 'rgba(51, 255, 102, 0.08)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      for (let x = 0; x < canvas.width; x += 20) {
+      for (let x = 0; x < canvas.width; x += 16) {
         ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
       }
-      for (let y = 0; y < canvas.height; y += 20) {
+      for (let y = 0; y < canvas.height; y += 16) {
         ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
       }
       ctx.stroke();
 
-      // Draw Live Waveform
+      // Waveform
       ctx.strokeStyle = '#33ff66';
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 6;
       ctx.shadowColor = '#33ff66';
       ctx.lineWidth = 2;
       ctx.beginPath();
 
       const centerY = canvas.height / 2;
-      const amp = (volumeVal / 100) * (canvas.height / 2.8);
-      const freq = (tuningVal / 10000) * 2;
+      const amp = (volumeVal / 100) * (canvas.height / 2.6);
+      const freq = (tuningVal / 10000) * 1.8;
 
       for (let x = 0; x < canvas.width; x++) {
         let y = centerY;
-        
-        if (activeMode.includes("TALLY")) {
-          // Pulse / Square Sine Wave hybrid
-          y += Math.sin(x * freq + phase) * amp + (Math.sin(x * freq * 3 + phase) * (amp / 3));
-        } else if (activeMode.includes("CD WORKOUT")) {
-          // Dynamic Lissajous / Beat Waveform
-          y += Math.sin(x * freq + phase) * Math.cos(x * 0.02) * amp;
-        } else {
-          // Clean Sine Wave
+
+        if (activeMode.includes("fm")) {
           y += Math.sin(x * freq + phase) * amp;
+        } else if (activeMode.includes("kw")) {
+          y += Math.sin(x * freq + phase) * Math.sin(x * 0.05) * amp;
+        } else if (activeMode.includes("mw")) {
+          y += (Math.sin(x * freq + phase) > 0 ? 1 : -1) * (amp * 0.7);
+        } else {
+          y += Math.sin(x * freq + phase) * amp + (Math.sin(x * freq * 2.5 + phase) * (amp / 4));
         }
 
         if (x === 0) ctx.moveTo(x, y);
@@ -618,21 +635,34 @@
       }
 
       ctx.stroke();
-      ctx.shadowBlur = 0; // Reset blur for speed
+      ctx.shadowBlur = 0;
 
-      phase += 0.08 + (bassVal / 500);
-      requestAnimationFrame(renderOscilloscope);
+      phase += 0.06 + (bassVal / 600);
+      requestAnimationFrame(renderScope);
     }
-    renderOscilloscope();
+    renderScope();
 
-    // --- Interactive Rotary Knobs Logic ---
+    // Stud Push Buttons Logic
+    const studs = document.querySelectorAll('.stud-container');
+    studs.forEach(stud => {
+      stud.addEventListener('click', () => {
+        playThudSound(180, 0.03);
+        studs.forEach(s => s.classList.remove('active'));
+        stud.classList.add('active');
+
+        activeMode = stud.dataset.mode;
+        scopeModeTxt.textContent = `mode: ${activeMode}`;
+        scopeFreqTxt.textContent = `freq: ${stud.dataset.freq}`;
+      });
+    });
+
+    // Knob Logic
     function setupKnob(id, callback) {
       const knob = document.getElementById(id);
       let isDragging = false;
       let startY = 0;
       let currentRotation = 0;
 
-      // Extract starting rotation from inline style
       const match = knob.style.transform.match(/rotate\(([-0-9.]+)deg\)/);
       if (match) currentRotation = parseFloat(match[1]);
 
@@ -655,9 +685,8 @@
         currentRotation = Math.max(-135, Math.min(135, currentRotation + deltaY * 2));
         knob.style.transform = `rotate(${currentRotation}deg)`;
 
-        // Play click sound on subtle rotation intervals
         if (Math.abs(deltaY) > 2) {
-          playClickSound(300 + (currentRotation + 135) * 2, 0.005);
+          playThudSound(400 + (currentRotation + 135) * 1.5, 0.006);
         }
 
         callback(currentRotation);
@@ -675,40 +704,12 @@
       knob.addEventListener('touchstart', onStart);
     }
 
-    setupKnob('knob-volume', (rot) => {
-      volumeVal = ((rot + 135) / 270) * 100;
-    });
+    setupKnob('knob-volume', (rot) => { volumeVal = ((rot + 135) / 270) * 100; });
+    setupKnob('knob-tuning', (rot) => { tuningVal = 100 + ((rot + 135) / 270) * 800; });
+    setupKnob('knob-bass', (rot) => { bassVal = ((rot + 135) / 270) * 100; });
+    setupKnob('knob-treble', () => {});
 
-    setupKnob('knob-tuning', (rot) => {
-      tuningVal = 100 + ((rot + 135) / 270) * 800;
-      scopeFreqTxt.textContent = `FREQ: ${Math.round(tuningVal)} Hz`;
-    });
-
-    setupKnob('knob-bass', (rot) => {
-      bassVal = ((rot + 135) / 270) * 100;
-    });
-
-    // --- Push Buttons Logic ---
-    const buttons = document.querySelectorAll('.hifi-btn');
-    buttons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        playClickSound(800, 0.02);
-
-        buttons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        if (btn.dataset.mode) {
-          activeMode = btn.dataset.mode;
-          scopeModeTxt.textContent = `MODE: ${activeMode}`;
-        }
-
-        if (btn.dataset.freq) {
-          scopeFreqTxt.textContent = `FREQ: ${btn.dataset.freq}`;
-        }
-      });
-    });
-
-    // --- Fader Sliders Drag Logic ---
+    // Fader Logic
     function setupFader(slotId, capId) {
       const slot = document.getElementById(slotId);
       const cap = document.getElementById(capId);
@@ -722,27 +723,13 @@
         
         const percent = (x / (rect.width - cap.offsetWidth)) * 100;
         cap.style.left = `${percent}%`;
-        playClickSound(200 + percent * 3, 0.003);
+        playThudSound(250 + percent * 2, 0.004);
       }
 
-      cap.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        initAudio();
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onEnd);
-      });
+      cap.addEventListener('mousedown', () => { isDragging = true; initAudio(); document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onEnd); });
+      cap.addEventListener('touchstart', () => { isDragging = true; initAudio(); document.addEventListener('touchmove', onMove); document.addEventListener('touchend', onEnd); });
 
-      cap.addEventListener('touchstart', (e) => {
-        isDragging = true;
-        initAudio();
-        document.addEventListener('touchmove', onMove);
-        document.addEventListener('touchend', onEnd);
-      });
-
-      function onMove(e) {
-        if (isDragging) updateFader(e);
-      }
-
+      function onMove(e) { if (isDragging) updateFader(e); }
       function onEnd() {
         isDragging = false;
         document.removeEventListener('mousemove', onMove);
