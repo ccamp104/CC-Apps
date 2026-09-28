@@ -215,7 +215,8 @@
       position: absolute;
       z-index: 1;
       left: 50%;
-      bottom: calc(100% - 50px); /* Anchors the bottom of the text just above the hollow */
+      bottom: calc(100% - 50px - 18px); /* Anchors the bottom of the text just above the hollow (18px = padding below) */
+      padding: 18px; /* room for the glow so the fade mask doesn't clip it */
       transform: translateX(-50%);
       font-family: 'Obojima', monospace;
       color: var(--glow);
@@ -225,7 +226,9 @@
       font-size: clamp(1rem, 3.5vw, 2.5rem);
       letter-spacing: 4px;
       pointer-events: none;
-      opacity: 0.9;
+      /* Fade from 90% visible at the bottom to invisible at the top of the string */
+      -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0) 100%);
+              mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0) 100%);
     }
     
     /* Moss and ferns that the roots sink into; wide enough to merge with neighbours */
