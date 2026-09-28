@@ -215,10 +215,10 @@
       position: absolute;
       z-index: 1;
       left: 50%;
-      top: 35px; /* Anchors text to the trunk below the canopy */
+      bottom: calc(100% - 50px); /* Anchors the bottom of the text just above the hollow */
       transform: translateX(-50%);
       font-family: 'Obojima', monospace;
-      color: var(--glow); /* Uses your existing glowing green-yellow variable */
+      color: var(--glow);
       text-shadow: 0 0 6px var(--glow), 0 0 12px var(--glow), 0 0 18px rgba(214, 242, 143, 0.6);
       writing-mode: vertical-rl;
       text-orientation: upright;
