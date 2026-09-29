@@ -213,7 +213,7 @@
 
     .tree-runes {
       position: absolute;
-      z-index: 1;
+      z-index: 1; /* runes: just above the trunks */
       left: 50%;
       bottom: calc(100% - 50px - 18px); /* Anchors the bottom of the text just above the hollow (18px = padding below) */
       padding: 18px; /* room for the glow so the fade mask doesn't clip it */
@@ -234,7 +234,7 @@
     /* Moss and ferns that the roots sink into; wide enough to merge with neighbours */
     .floor {
       position: absolute;
-      z-index: 1;
+      z-index: 2; /* moss base: above trunks and runes */
       left: -22%;
       right: -22%;
       bottom: -10px;
@@ -242,11 +242,25 @@
       pointer-events: none;
     }
     .floor svg { width: 100%; height: 100%; display: block; overflow: visible; }
+    /* One trunk per grid column: only its lowest app has roots and moss */
+    .app-card:not(.on-ground) .floor { display: none; }
+    .app-card:not(.on-ground) .root-spirit { display: none; }
+    .app-card.on-ground .trunk-column,
+    .app-card:not(.on-ground) .trunk-ground { display: none; }
+    .app-card:not(.on-ground) .tree-svg { bottom: -30px; height: calc(100% + 70px); }
+    .app-card.on-ground .tree-svg { bottom: calc(-1 * var(--drop, 0px)); height: calc(100% + 40px + var(--drop, 0px)); }
+    .app-card.on-ground.top-row .tree-svg { height: calc(100% + var(--rise, 220px) + var(--drop, 0px)); }
+    .app-card.on-ground .floor { bottom: calc(-10px - var(--drop, 0px)); }
+    .app-card.on-ground .root-spirit { bottom: calc(0px - var(--drop, 0px)); }
+    .app-card.top-row:not(.on-ground) .tree-svg { height: calc(100% + var(--rise, 220px) + 30px); }
+    .app-card.has-above .tree-svg { -webkit-mask-image: none; mask-image: none; }
+    /* Every active app has its own runes; empty hollows don't */
+    .app-card.disabled .tree-runes { display: none; }
 
     /* The hollow itself shows the app's background image */
     .hollow {
       position: relative;
-      z-index: 2;
+      z-index: 3; /* hollow: above moss */
       width: 48%;
       aspect-ratio: 3 / 4;
       border-radius: 50% 50% 44% 44% / 56% 56% 38% 38%;
@@ -286,7 +300,7 @@
     /* Wooden sign with the app name */
     .app-card-content {
       position: relative;
-      z-index: 2;
+      z-index: 4; /* wooden sign: frontmost */
       margin-top: 16px;
       width: 88%;
       padding: 7px 8px 8px;
@@ -539,8 +553,30 @@
         </div>
       </a>
 
+      <!-- TEST: duplicate of Regie -->
+      <a href="Regie.html" class="app-card card-regie" data-spirit="synth">
+        <div class="app-card-content">
+          <h2>Regie</h2>
+          <p>A new tool in the grove</p>
+        </div>
+      </a>
+
       <!-- Disabled Coming Soon Card -->
 
+      <div class="app-card disabled" aria-disabled="true">
+        <div class="app-card-content">
+          <h2>Coming Soon</h2>
+          <p>This hollow is still empty</p>
+        </div>
+      </div>
+
+      <!-- TEST: extra Coming Soon hollows (delete these two when done) -->
+      <div class="app-card disabled" aria-disabled="true">
+        <div class="app-card-content">
+          <h2>Coming Soon</h2>
+          <p>This hollow is still empty</p>
+        </div>
+      </div>
       <div class="app-card disabled" aria-disabled="true">
         <div class="app-card-content">
           <h2>Coming Soon</h2>
@@ -779,9 +815,12 @@
     /* ---------- Turn each app into a tree with a hollow ---------- */
     // Tall trunk (viewBox 510 units). Lower rows only show the bottom part.
     const TREE_SVG = `<svg class="tree-svg" viewBox="0 170 200 340" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M56,0 H144 C148,140 158,230 160,300 C158,360 156,400 160,440 C164,476 174,496 198,504 L200,510 H0 L2,504 C26,496 36,476 40,440 C44,400 42,360 40,300 C42,230 52,140 56,0Z" fill="url(#barkGrad)"/>
-      <path d="M72,0 C66,140 72,300 64,500 M100,20 C96,120 106,220 98,330 M130,0 C136,160 128,320 142,490" stroke="#120c07" stroke-width="3" fill="none" opacity=".55"/>
-      <path d="M40,440 C30,476 14,496 2,504 M160,440 C170,476 186,496 198,504" stroke="#120c07" stroke-width="3" fill="none" opacity=".4"/>
+      <g class="trunk-ground">
+        <path class="ground-shape" d="M46,0 H154 C152,120 158,240 156,330 C155,390 156,420 160,440 C164,476 174,496 198,504 L200,510 H0 L2,504 C26,496 36,476 40,440 C44,420 45,390 44,330 C42,240 48,120 46,0Z" fill="url(#barkGrad)"/>
+        <path class="ground-roots" d="M40,440 C30,476 14,496 2,504 M160,440 C170,476 186,496 198,504" stroke="#120c07" stroke-width="3" fill="none" opacity=".4"/>
+      </g>
+      <path class="trunk-column" d="M46,0 H154 C152,120 158,240 156,330 C155,400 155,470 155,540 L45,540 C45,470 45,400 44,330 C42,240 48,120 46,0Z" fill="url(#barkGrad)"/>
+      <path class="bark-lines" d="M72,0 C66,140 72,300 66,540 M100,20 C96,120 106,220 98,330 M130,0 C136,160 128,320 136,540" stroke="#120c07" stroke-width="3" fill="none" opacity=".55"/>
       <path d="M58,150 C44,140 30,134 12,130" stroke="#2a1c11" stroke-width="7" fill="none" stroke-linecap="round"/>
       <g class="foliage"><circle cx="12" cy="124" r="14" fill="#1f3d2a"/><circle cx="26" cy="118" r="11" fill="#27492f"/><circle cx="4" cy="132" r="9" fill="#1b3524"/></g>
       <path d="M146,96 C160,86 176,82 194,80" stroke="#2a1c11" stroke-width="6" fill="none" stroke-linecap="round"/>
@@ -817,17 +856,43 @@
       const firstTop = cards[0].offsetTop;
       const rise = Math.max(120, cards[0].getBoundingClientRect().top + scrollY + 20);
       document.documentElement.style.setProperty('--rise', rise + 'px');
+      // Apps in the same grid column share one trunk:
+      //   top-row   = top of the trunk (rises into the canopy, carries the runes)
+      //   on-ground = nothing below it (roots flare out, stands on moss)
+      //   has-above = continues a trunk from the app above
       cards.forEach(c => {
+        const sameCol = o => o !== c && Math.abs(o.offsetLeft - c.offsetLeft) < 5;
         const top = Math.abs(c.offsetTop - firstTop) < 5;
+        const ground = !cards.some(o => sameCol(o) && o.offsetTop > c.offsetTop + 5);
+        const above = cards.some(o => sameCol(o) && o.offsetTop < c.offsetTop - 5);
         c.classList.toggle('top-row', top);
+        c.classList.toggle('on-ground', ground);
+        c.classList.toggle('has-above', above);
+        c.style.setProperty('--drop', '0px');
+      });
+
+      // If a column is shorter than the others, its lowest trunk grows
+      // down to the same forest floor instead of ending in mid-air.
+      const gridBottom = Math.max(...cards.map(c => c.offsetTop + c.offsetHeight));
+      cards.forEach(c => {
         const svg = c.querySelector('.tree-svg');
         if (!svg) return;
-        if (top) {
-          // stretch the full trunk up into the canopy
-          svg.setAttribute('viewBox', '0 0 200 510');
-        } else {
-          svg.setAttribute('viewBox', '0 170 200 340');
-        }
+        const top = c.classList.contains('top-row');
+        const ground = c.classList.contains('on-ground');
+        const y0 = top ? 0 : 170;
+        const y1 = ground ? 510 : 540;
+        const hPx = svg.getBoundingClientRect().height || 1;
+        const k = (y1 - y0) / hPx;                     // viewBox units per pixel
+        const dropPx = ground ? Math.max(0, gridBottom - (c.offsetTop + c.offsetHeight)) : 0;
+        const D = +(dropPx * k).toFixed(1);
+        c.style.setProperty('--drop', dropPx + 'px');
+        svg.setAttribute('viewBox', `0 ${y0} 200 ${y1 - y0 + D}`);
+        svg.querySelector('.ground-shape').setAttribute('d',
+          `M46,0 H154 C152,120 158,240 156,330 C155,390 156,420 160,440 L160,${440 + D} C164,${476 + D} 174,${496 + D} 198,${504 + D} L200,${510 + D} H0 L2,${504 + D} C26,${496 + D} 36,${476 + D} 40,${440 + D} L40,440 C44,420 45,390 44,330 C42,240 48,120 46,0Z`);
+        svg.querySelector('.ground-roots').setAttribute('d',
+          `M40,${440 + D} C30,${476 + D} 14,${496 + D} 2,${504 + D} M160,${440 + D} C170,${476 + D} 186,${496 + D} 198,${504 + D}`);
+        svg.querySelector('.bark-lines').setAttribute('d',
+          `M72,0 C66,140 72,300 66,${540 + D} M100,20 C96,120 106,220 98,330 M130,0 C136,160 128,320 136,${540 + D}`);
       });
     }
 
