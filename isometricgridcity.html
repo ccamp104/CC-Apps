@@ -25,6 +25,7 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+      user-select: -webkit-none;
       user-select: none;
     }
 
@@ -43,10 +44,11 @@
     /* --- UI HUD Panels --- */
     .hud-container {
       position: fixed;
-      top: 40px;
-      left: 40px;
+      top: 20px;
+      left: 20px;
       z-index: 100;
-      width: 360px;
+      width: calc(100vw - 32px);
+      max-width: 360px;
       pointer-events: none;
     }
 
@@ -54,8 +56,9 @@
       position: absolute;
       top: 0; left: 0;
       width: 100%;
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(15, 23, 42, 0.88);
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255,255,255,0.1);
       border-left: 4px solid var(--accent, #475569);
       border-radius: 8px;
@@ -66,11 +69,11 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
 
-    .ui-panel h2 { font-size: 1.5rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent, #fff); }
-    .ui-panel p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 24px; }
+    .ui-panel h2 { font-size: 1.4rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent, #fff); }
+    .ui-panel p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px; }
     .ui-panel a {
       display: inline-block; padding: 10px 24px; background: rgba(255,255,255,0.05); color: var(--text-main);
-      text-decoration: none; border-radius: 4px; font-weight: 600; text-transform: uppercase; font-size: 0.85rem;
+      text-decoration: none; border-radius: 4px; font-weight: 600; text-transform: uppercase; font-size: 0.8rem;
       letter-spacing: 1px; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.2); pointer-events: auto;
     }
     .ui-panel a:hover { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
@@ -103,6 +106,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      overflow: hidden;
     }
 
     .city-grid {
@@ -119,6 +123,18 @@
       box-shadow: 0 0 150px rgba(56, 189, 248, 0.08);
       border: 2px solid var(--grid-color);
       transition: transform 0.8s ease;
+    }
+
+    /* Responsive scaling for smaller windows / mobile screens */
+    @media (max-width: 1200px) {
+      .city-grid { transform: scale(0.6) rotateX(60deg) rotateZ(-45deg); }
+    }
+    @media (max-width: 768px) {
+      .city-grid { transform: scale(0.42) rotateX(60deg) rotateZ(-45deg); }
+      .hud-container { top: 16px; left: 16px; }
+      .ui-panel { padding: 18px; }
+      .ui-panel h2 { font-size: 1.2rem; }
+      .ui-panel p { font-size: 0.82rem; margin-bottom: 14px; }
     }
 
     .building {
