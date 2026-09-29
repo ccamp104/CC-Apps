@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Armorer's Tome - Outfit Logbook</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts for Fantasy Aesthetic -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Cinzel', 'serif'],
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            amber: {
+              350: '#f5c056',
+              450: '#e59c1c',
+            },
+            parchment: {
+              100: '#fbf8ed',
+              200: '#f4eed8',
+              800: '#2b261f',
+              900: '#1a1611',
+            }
+          },
+          boxShadow: {
+            'glow-amber': '0 0 15px rgba(217, 119, 6, 0.3)',
+            'glow-cyan': '0 0 15px rgba(6, 182, 212, 0.3)',
+            'book-3d': '0 20px 30px -10px rgba(0, 0, 0, 0.7), 0 0 10px rgba(0,0,0,0.5)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #f59e0b;
+    }
+
+    /* Page Flip & Card Animations */
+    .book-container {
+      perspective: 1200px;
+    }
+    .page-card {
+      transition: transform 0.4s ease-in-out, opacity 0.3s ease;
+      transform-style: preserve-3d;
+    }
+    
+    /* Background Pattern */
+    .bg-grid-pattern {
+      background-image: radial-gradient(rgba(217, 119, 6, 0.1) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Slot Border Effect */
+    .slot-border {
+      position: relative;
+    }
+    .slot-border::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 0.5rem;
+      padding: 1px;
+      background: linear-gradient(to bottom right, rgba(217, 119, 6, 0.4), transparent, rgba(217, 119, 6, 0.1));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200 bg-grid-pattern">
+
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 px-4 lg:px-8 py-3.5 flex items-center justify-between shadow-lg">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-slate-950 shadow-glow-amber font-serif font-bold text-xl border border-amber-300/40">
+        <i data-lucide="shield" class="w-6 h-6 stroke-[2.2]"></i>
+      </div>
+      <div>
+        <h1 class="font-serif font-bold text-lg md:text-xl text-amber-100 tracking-wider flex items-center gap-2">
+          ARMORER'S TOME
+          <span class="text-xs font-sans px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">Logbook</span>
+        </h1>
+        <p class="text-xs text-slate-400 hidden sm:block">Archive & Review Equipment Sets</p>
+      </div>
+    </div>
+
+    <!-- Right Controls: View Switcher & Action Button -->
+    <div class="flex items-center space-x-2 sm:space-x-4">
+      <!-- Mode Toggle (Flick Book vs Grid) -->
+      <div class="bg-slate-950 p-1 rounded-lg border border-slate-800 flex items-center space-x-1">
+        <button id="viewFlickBtn" onclick="switchView('flick')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 bg-amber-500 text-slate-950 shadow-sm">
+          <i data-lucide="book-open" class="w-4 h-4"></i>
+          <span class="hidden md:inline">Tome Mode</span>
+        </button>
+        <button id="viewGridBtn" onclick="switchView('grid')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium text-slate-400 hover:text-amber-200 transition-all duration-200">
+          <i data-lucide="layout-grid" class="w-4 h-4"></i>
+          <span class="hidden md:inline">Grid Gallery</span>
+        </button>
+      </div>
+
+      <!-- Add Outfit Button -->
+      <button onclick="openModal()" class="flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-slate-950 font-semibold text-xs sm:text-sm shadow-glow-amber transition-all hover:scale-[1.02] active:scale-[0.98]">
+        <i data-lucide="plus-circle" class="w-4 h-4 stroke-[2.5]"></i>
+        <span>Forge Outfit</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-6 overflow-x-hidden">
+    
+    <!-- Filter & Search Bar Section -->
+    <section class="bg-slate-900/60 rounded-xl p-4 border border-slate-800 flex flex-col gap-3.5 shadow-md">
+      
+      <!-- Top Row: Search & Game Filter -->
+      <div class="flex flex-col md:flex-row items-stretch md:items-center gap-3 justify-between">
+        <!-- Search Input -->
+        <div class="relative flex-1 max-w-md">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Search outfit, game, gear piece, or class..."
+            oninput="handleSearch()"
+            class="w-full bg-slate-950 border border-slate-700/80 rounded-lg pl-9 pr-8 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/80 transition-all placeholder:text-slate-500"
+          >
+          <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- GAME FILTER DROPDOWN -->
+        <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+          <i data-lucide="gamepad-2" class="w-4 h-4 text-cyan-400 shrink-0"></i>
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider shrink-0">Game:</span>
+          <select id="gameFilterSelect" onchange="filterByGame(this.value)" class="bg-transparent text-xs font-semibold text-amber-200 focus:outline-none cursor-pointer pr-2">
+            <option value="all" class="bg-slate-900 text-slate-100">All Games</option>
+            <!-- Dynamic game options injected here -->
+          </select>
+        </div>
+      </div>
+
+      <!-- Bottom Row: TAG / CLASS FILTERS -->
+      <div class="flex items-center gap-2 overflow-x-auto w-full pt-1 border-t border-slate-800/60 scrollbar-none" id="tagFilterContainer">
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1 shrink-0">
+          <i data-lucide="filter" class="w-3.5 h-3.5"></i> Class/Style:
+        </span>
+        <button onclick="filterByTag('all')" data-tag="all" class="tag-filter-btn px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0 transition-all">
+          All
+        </button>
+        <!-- Dynamic Tags injected here -->
+      </div>
+    </section>
+
+    <!-- VIEW 1: FLICK BOOK / CAROUSEL MODE -->
+    <section id="flickView" class="flex-1 flex flex-col justify-between min-h-[500px]">
+      
+      <!-- Book Deck Wrapper -->
+      <div class="flex-1 flex items-center justify-center py-4 relative">
+        <div id="bookContainer" class="w-full max-w-2xl relative book-container flex items-center justify-center">
+          <!-- Dynamic Flick Card renders here -->
+        </div>
+      </div>
+
+      <!-- Book Pagination Controls -->
+      <div id="flickControls" class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 sm:p-4 flex items-center justify-between shadow-lg mt-4 max-w-2xl mx-auto w-full">
+        <button id="prevBtn" onclick="changePage(-1)" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Previous</span>
+        </button>
+
+        <div class="text-center">
+          <span id="pageCounter" class="font-serif font-bold text-amber-300 text-base sm:text-lg">Page 1 of 1</span>
+          <p id="totalRecordsText" class="text-xs text-slate-400">0 outfits logged</p>
+        </div>
+
+        <button id="nextBtn" onclick="changePage(1)" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+          <span class="hidden sm:inline">Next</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- VIEW 2: GRID GALLERY MODE -->
+    <section id="gridView" class="hidden flex-1">
+      <div id="gridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Dynamic Grid Cards inject here -->
+      </div>
+    </section>
+
+    <!-- Empty State Prompt -->
+    <div id="emptyState" class="hidden flex-1 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-slate-800 rounded-2xl my-8">
+      <div class="w-16 h-16 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 mb-4">
+        <i data-lucide="scroll" class="w-8 h-8"></i>
+      </div>
+      <h3 class="font-serif text-xl font-bold text-slate-300 mb-1">No Outfits Found</h3>
+      <p class="text-slate-400 text-sm max-w-md mb-6">No records match your filters or query, or your logbook is empty. Craft a new combination to begin your archive.</p>
+      <button onclick="openModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-sm transition-all flex items-center gap-2">
+        <i data-lucide="plus" class="w-4 h-4 stroke-[3]"></i> Create Outfit Record
+      </button>
+    </div>
+
+  </main>
+
+  <!-- MODAL: ADD / EDIT OUTFIT -->
+  <div id="outfitModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 opacity-0 pointer-events-none transition-all duration-300">
+    <div class="bg-slate-900 border border-amber-500/30 rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden transform scale-95 transition-all duration-300" id="modalCard">
+      
+      <!-- Modal Header -->
+      <div class="bg-slate-950/80 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <i data-lucide="hammer" class="w-5 h-5 text-amber-400"></i>
+          <h2 id="modalTitle" class="font-serif font-bold text-lg text-amber-100">Forge Outfit Record</h2>
+        </div>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-100 p-1 rounded-lg hover:bg-slate-800 transition-all">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body - Scrollable Form -->
+      <form id="outfitForm" onsubmit="saveOutfit(event)" class="flex-1 overflow-y-auto p-6 space-y-6">
+        <input type="hidden" id="outfitId">
+
+        <!-- Top Section: Game, Name & Class Tag -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          
+          <!-- Game Field -->
+          <div class="space-y-1">
+            <label class="block text-xs font-semibold text-cyan-300 uppercase tracking-wider flex items-center gap-1">
+              <i data-lucide="gamepad-2" class="w-3.5 h-3.5"></i> Game Title *
+            </label>
+            <select id="outfitGameSelect" onchange="toggleCustomGameInput(this.value)" class="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all">
+              <option value="Elden Ring">Elden Ring</option>
+              <option value="Skyrim">Skyrim</option>
+              <option value="Zelda: Tears of the Kingdom">Zelda: TOTK</option>
+              <option value="World of Warcraft">World of Warcraft</option>
+              <option value="Monster Hunter">Monster Hunter</option>
+              <option value="Dark Souls">Dark Souls</option>
+              <option value="Cyberpunk 2077">Cyberpunk 2077</option>
+              <option value="custom">+ Add Custom Game...</option>
+            </select>
+            <input type="text" id="outfitCustomGame" placeholder="Enter Game Title" class="hidden w-full mt-2 bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:border-amber-500 focus:outline-none">
+          </div>
+
+          <!-- Outfit Name -->
+          <div class="space-y-1">
+            <label class="block text-xs font-semibold text-amber-200 uppercase tracking-wider">Outfit Name *</label>
+            <input type="text" id="outfitName" required placeholder="e.g. Royal Paladin Aegis" class="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-3.5 py-2 text-sm text-slate-100 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all">
+          </div>
+
+          <!-- Class / Style Tag -->
+          <div class="space-y-1">
+            <label class="block text-xs font-semibold text-amber-200 uppercase tracking-wider">Class / Style Tag</label>
+            <input type="text" id="outfitTag" placeholder="e.g. Heavy, Stealth, Mage" class="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-3.5 py-2 text-sm text-slate-100 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all">
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-400 italic">Fill out whichever slots you are using. Unused slots can be left empty.</p>
+
+        <!-- Equipment Slots Section -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-serif font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-1 flex items-center gap-1.5">
+            <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i> Armor & Apparel
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            
+            <!-- Headgear -->
+            <div class="slot-border bg-slate-950/60 rounded-lg p-2.5 flex items-center gap-3">
+              <div class="w-8 h-8 rounded bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+                <i data-lucide="crown" class="w-4 h-4"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase">Headgear</label>
+                <input type="text" id="slotHeadgear" placeholder="Helm, Hood, Crown..." class="w-full bg-transparent border-none text-xs text-slate-100 p-0 focus:outline-none focus:ring-0 placeholder:text-slate-600">
+              </div>
+            </div>
+
+            <!-- Chest Gear -->
+            <div class="slot-border bg-slate-950/60 rounded-lg p-2.5 flex items-center gap-3">
+              <div class="w-8 h-8 rounded bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+                <i data-lucide="shirt" class="w-4 h-4"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase">Chest Gear</label>
+                <input type="text" id="slotChest" placeholder="Cuirass, Robe, Breastplate..." class="w-full bg-transparent border-none text-xs text-slate-100 p-0 focus:outline-none focus:ring-0 placeholder:text-slate-600">
+              </div>
+            </div>
+
+            <!-- Cloak -->
+            <div class="slot-border bg-slate-950/60 rounded-lg p-2.5 flex items-center gap-3">
+              <div class="w-8 h-8 rounded bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+                <i data-lucide="feather" class="w-4 h-4"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase">Cloak / Cape</label>
+                <input type="text" id="slotCloak" placeholder="Cape, Mantle, Shroud..." class="w-full bg-transparent border-none text-xs text-slate-100 p-0 focus:outline-none focus:ring-0 placeholder:text-slate-600">
+              </div>
+            </div>
+
+            <!-- Gloves -->
+            <div class="slot-border bg-slate-950/60 rounded-lg p-2.5 flex items-center gap-3">
+              <div class="w-8 h-8 rounded bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+                <i data-lucide="hand" class="w-4 h-4"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase">Gloves / Gauntlets</label>
+                <input type="text" id="slotGloves" placeholder="Gauntlets, Wraps, Vambraces..." class="w-full bg-transparent border-none text-xs text-slate-100 p-0 focus:outline-none focus:ring-0 placeholder:text-slate-600">
+              </div>
+            </div>
+
+            <!-- Boots -->
+            <div class="slot-border bg-slate-950/60 rounded-lg p-2.5 flex items-center gap-3 sm:col-span-2">
+              <div class="w-8 h-8 rounded bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+                <i data-lucide="footprints" class="w-4 h-4"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase">Boots / Footwear</label>
+                <input type="text" id="slotBoots" placeholder="Greaves, Boots, Slippers..." class="w-full bg-transparent border-none text-xs text-slate-100 p-0 focus:outline-none focus:ring-0 placeholder:text-slate-600">
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Weapon & Off-hand Section -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-serif font-bold text-cyan-400 uppercase tracking-wider border-b border-slate-800 pb-1 flex items-center gap-1.5">
+            <i data-lucide="swords" class="w-3.5 h-3.5"></i> Armaments & Off-Hand
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            
+            <!-- Primary Weapon -->
+            <div class="slot-border bg-slate-950/60 rounded-lg p-2.5 flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0 border border-cyan-500/20">
+                <i data-lucide="sword" class="w-4 h-4"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase">Primary Weapon</label>
+                <input type="text" id="slotWeapon1" placeholder="Sword, Staff, Bow..." class="w-full bg-transparent border-none text-xs text-slate-100 p-0 focus:outline-none focus:ring-0 placeholder:text-slate-600">
+              </div>
+            </div>
+
+            <!-- Secondary Weapon -->
+            <div class="slot-border bg-slate-950/60 rounded-lg p-2.5 flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0 border border-cyan-500/20">
+                <i data-lucide="axe" class="w-4 h-4"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase">Secondary Weapon</label>
+                <input type="text" id="slotWeapon2" placeholder="Dagger, Off-axe..." class="w-full bg-transparent border-none text-xs text-slate-100 p-0 focus:outline-none focus:ring-0 placeholder:text-slate-600">
+              </div>
+            </div>
+
+            <!-- Off-Hand / Shield / 3rd Weapon -->
+            <div class="slot-border bg-slate-950/60 rounded-lg p-2.5 flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0 border border-cyan-500/20">
+                <i data-lucide="shield-half" class="w-4 h-4"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase">Shield / Off-Hand</label>
+                <input type="text" id="slotShieldWeapon3" placeholder="Tower Shield, Tome..." class="w-full bg-transparent border-none text-xs text-slate-100 p-0 focus:outline-none focus:ring-0 placeholder:text-slate-600">
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Notes / Lore -->
+        <div class="space-y-1">
+          <label class="block text-xs font-semibold text-amber-200 uppercase tracking-wider">Notes & Special Perks</label>
+          <textarea id="outfitNotes" rows="2" placeholder="e.g. +15% Fire Resistance, tailored for dragon hunts..." class="w-full bg-slate-950 border border-slate-700/80 rounded-lg p-3 text-sm text-slate-100 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all placeholder:text-slate-600 resize-none"></textarea>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="pt-2 flex items-center justify-end gap-3 border-t border-slate-800">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all">
+            Cancel
+          </button>
+          <button type="submit" class="px-6 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-slate-950 font-bold text-sm shadow-glow-amber transition-all">
+            Save to Logbook
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Box -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slate-900 border border-amber-500/40 text-amber-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300">
+    <i data-lucide="check-circle-2" id="toastIcon" class="w-5 h-5 text-amber-400"></i>
+    <span id="toastMsg" class="text-sm font-medium">Notification message</span>
+  </div>
+
+  <script>
+    // Initial Pre-loaded Fantasy Outfits with Game tags
+    const DEFAULT_OUTFITS = [
+      {
+        id: "outfit-1",
+        name: "Crucible Knight Set",
+        game: "Elden Ring",
+        tag: "Heavy Armor",
+        notes: "Heavy knight armor imbued with ancient primordial life energy.",
+        slots: {
+          headgear: "Crucible Axe Helm",
+          chest: "Crucible Axe Armor",
+          cloak: "Red Silk Mantle",
+          gloves: "Crucible Gauntlets",
+          boots: "Crucible Greaves",
+          weapon1: "Ordovis's Greatsword",
+          weapon2: "",
+          shieldWeapon3: "Crucible Hornshield"
+        },
+        createdAt: Date.now() - 3600000 * 24 * 3
+      },
+      {
+        id: "outfit-2",
+        name: "Nightingale Stealth Outfit",
+        game: "Skyrim",
+        tag: "Stealth",
+        notes: "Blessed leather armor of Nocturnal. Grants silent footfalls.",
+        slots: {
+          headgear: "Nightingale Hood",
+          chest: "Nightingale Armor",
+          cloak: "Shadow Mantle",
+          gloves: "Nightingale Gloves",
+          boots: "Nightingale Boots",
+          weapon1: "Nightingale Blade",
+          weapon2: "Nightingale Bow",
+          shieldWeapon3: ""
+        },
+        createdAt: Date.now() - 3600000 * 24 * 2
+      },
+      {
+        id: "outfit-3",
+        name: "Wild Zone Champion",
+        game: "Zelda: Tears of the Kingdom",
+        tag: "Exploration",
+        notes: "Ancient Link armor set tailored for high stamina consumption and climbing speed.",
+        slots: {
+          headgear: "Cap of the Wild",
+          chest: "Tunic of the Wild",
+          cloak: "Hylian Hood",
+          gloves: "Climber's Wraps",
+          boots: "Trousers of the Wild",
+          weapon1: "Master Sword",
+          weapon2: "Savage Lynel Bow",
+          shieldWeapon3: "Hylian Shield"
+        },
+        createdAt: Date.now() - 3600000 * 24 * 1
+      }
+    ];
+
+    // App State
+    let outfits = [];
+    let currentView = 'flick'; // 'flick' or 'grid'
+    let currentPageIndex = 0;
+    let searchQuery = '';
+    let selectedGame = 'all';
+    let selectedTag = 'all';
+
+    // DOM Elements Reference
+    const flickView = document.getElementById('flickView');
+    const gridView = document.getElementById('gridView');
+    const viewFlickBtn = document.getElementById('viewFlickBtn');
+    const viewGridBtn = document.getElementById('viewGridBtn');
+    const bookContainer = document.getElementById('bookContainer');
+    const gridContainer = document.getElementById('gridContainer');
+    const emptyState = document.getElementById('emptyState');
+    const pageCounter = document.getElementById('pageCounter');
+    const totalRecordsText = document.getElementById('totalRecordsText');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const modal = document.getElementById('outfitModal');
+    const modalCard = document.getElementById('modalCard');
+    const outfitForm = document.getElementById('outfitForm');
+
+    // Slot Definitions Map
+    const slotIcons = {
+      headgear: { icon: 'crown', label: 'Headgear' },
+      chest: { icon: 'shirt', label: 'Chest Gear' },
+      cloak: { icon: 'feather', label: 'Cloak / Cape' },
+      gloves: { icon: 'hand', label: 'Gloves' },
+      boots: { icon: 'footprints', label: 'Boots' },
+      weapon1: { icon: 'sword', label: 'Primary Weapon', weapon: true },
+      weapon2: { icon: 'axe', label: 'Secondary Weapon', weapon: true },
+      shieldWeapon3: { icon: 'shield-half', label: 'Shield / Off-Hand', weapon: true }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStorage();
+      renderGameFilterOptions();
+      renderTags();
+      render();
+      lucide.createIcons();
+    });
+
+    // Local Storage Management
+    function loadStorage() {
+      const stored = localStorage.getItem('armorer_outfits');
+      if (stored) {
+        try {
+          outfits = JSON.parse(stored);
+          // Ensure migration for legacy items without a game property
+          outfits = outfits.map(o => ({ ...o, game: o.game || "General" }));
+        } catch(e) {
+          outfits = DEFAULT_OUTFITS;
+        }
+      } else {
+        outfits = DEFAULT_OUTFITS;
+        saveStorage();
+      }
+    }
+
+    function saveStorage() {
+      localStorage.setItem('armorer_outfits', JSON.stringify(outfits));
+    }
+
+    // Filter Logic combining Search + Game + Tag
+    function getFilteredOutfits() {
+      return outfits.filter(item => {
+        // Game filter
+        const matchesGame = (selectedGame === 'all') || 
+                            (item.game && item.game.toLowerCase() === selectedGame.toLowerCase());
+        if (!matchesGame) return false;
+
+        // Tag filter
+        const matchesTag = (selectedTag === 'all') || 
+                           (item.tag && item.tag.toLowerCase() === selectedTag.toLowerCase());
+        if (!matchesTag) return false;
+
+        // Search filter
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+
+        const matchName = item.name.toLowerCase().includes(q);
+        const matchGame = item.game && item.game.toLowerCase().includes(q);
+        const matchTag = item.tag && item.tag.toLowerCase().includes(q);
+        const matchNotes = item.notes && item.notes.toLowerCase().includes(q);
+        const matchSlots = Object.values(item.slots || {}).some(val => val && val.toLowerCase().includes(q));
+
+        return matchName || matchGame || matchTag || matchNotes || matchSlots;
+      });
+    }
+
+    function render() {
+      const filtered = getFilteredOutfits();
+
+      // Handle Empty State
+      if (filtered.length === 0) {
+        flickView.classList.add('hidden');
+        gridView.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        return;
+      } else {
+        emptyState.classList.add('hidden');
+      }
+
+      if (currentView === 'flick') {
+        flickView.classList.remove('hidden');
+        gridView.classList.add('hidden');
+        renderFlickBook(filtered);
+      } else {
+        flickView.classList.add('hidden');
+        gridView.classList.remove('hidden');
+        renderGrid(filtered);
+      }
+
+      lucide.createIcons();
+    }
+
+    // Render Flick Book Mode
+    function renderFlickBook(filteredList) {
+      if (currentPageIndex >= filteredList.length) {
+        currentPageIndex = Math.max(0, filteredList.length - 1);
+      }
+
+      const outfit = filteredList[currentPageIndex];
+      pageCounter.innerText = `Page ${currentPageIndex + 1} of ${filteredList.length}`;
+      totalRecordsText.innerText = `${outfits.length} total outfits in tome`;
+
+      prevBtn.disabled = currentPageIndex === 0;
+      nextBtn.disabled = currentPageIndex === filteredList.length - 1;
+
+      // Build Slots HTML
+      const slotsHTML = Object.entries(slotIcons).map(([key, config]) => {
+        const val = outfit.slots[key];
+        const isFilled = val && val.trim().length > 0;
+
+        return `
+          <div class="p-3 rounded-lg border ${isFilled ? 'border-amber-500/30 bg-slate-900/90 shadow-sm' : 'border-slate-800/50 bg-slate-950/40 opacity-50'} flex items-center gap-3 transition-all">
+            <div class="w-8 h-8 rounded-md ${config.weapon ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'} flex items-center justify-center shrink-0 border">
+              <i data-lucide="${config.icon}" class="w-4 h-4"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-[10px] font-bold ${config.weapon ? 'text-cyan-400' : 'text-amber-400'} uppercase tracking-wider">${config.label}</p>
+              <p class="text-xs sm:text-sm font-semibold truncate ${isFilled ? 'text-slate-100' : 'text-slate-600 italic'}">
+                ${isFilled ? escapeHTML(val) : '— Unassigned —'}
+              </p>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      bookContainer.innerHTML = `
+        <div class="w-full bg-slate-900 border-2 border-amber-500/40 rounded-2xl p-6 sm:p-8 shadow-book-3d page-card relative overflow-hidden">
+          <!-- Decorative Top Glow -->
+          <div class="absolute -top-12 -right-12 w-28 h-28 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4 mb-6 gap-2">
+            <div>
+              <!-- Badges: Game + Class -->
+              <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                <span class="px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 text-xs font-bold border border-cyan-500/30 flex items-center gap-1">
+                  <i data-lucide="gamepad-2" class="w-3 h-3"></i> ${escapeHTML(outfit.game || 'General')}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 text-xs font-semibold border border-amber-500/30 uppercase tracking-wide">
+                  ${outfit.tag ? escapeHTML(outfit.tag) : 'General Set'}
+                </span>
+              </div>
+              <h2 class="font-serif font-bold text-xl sm:text-2xl text-amber-100">${escapeHTML(outfit.name)}</h2>
+            </div>
+
+            <!-- Card Actions -->
+            <div class="flex items-center gap-1.5 self-end sm:self-center">
+              <button onclick="duplicateOutfit('${outfit.id}')" title="Duplicate Outfit" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-300 transition-all">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+              </button>
+              <button onclick="editOutfit('${outfit.id}')" title="Edit Record" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-300 transition-all">
+                <i data-lucide="edit" class="w-4 h-4"></i>
+              </button>
+              <button onclick="deleteOutfit('${outfit.id}')" title="Delete Record" class="p-2 rounded-lg bg-slate-800/80 hover:bg-red-950 text-slate-300 hover:text-red-400 border border-transparent hover:border-red-800/40 transition-all">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Slots Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+            ${slotsHTML}
+          </div>
+
+          <!-- Notes Section -->
+          ${outfit.notes ? `
+            <div class="bg-slate-950/70 border border-slate-800/80 rounded-lg p-3.5">
+              <p class="text-xs font-bold text-amber-300/90 uppercase tracking-wider mb-1 flex items-center gap-1">
+                <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Notes & Perks
+              </p>
+              <p class="text-xs sm:text-sm text-slate-300 leading-relaxed italic">"${escapeHTML(outfit.notes)}"</p>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // Render Grid Gallery Mode
+    function renderGrid(filteredList) {
+      gridContainer.innerHTML = filteredList.map(outfit => {
+        const filledSlotsCount = Object.values(outfit.slots).filter(v => v && v.trim().length > 0).length;
+
+        return `
+          <div class="bg-slate-900 border border-slate-800 hover:border-amber-500/40 rounded-xl p-5 shadow-lg flex flex-col justify-between transition-all hover:scale-[1.01]">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 flex items-center gap-1">
+                  <i data-lucide="gamepad-2" class="w-3 h-3"></i> ${escapeHTML(outfit.game || 'General')}
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20 uppercase">
+                  ${outfit.tag ? escapeHTML(outfit.tag) : 'General'}
+                </span>
+              </div>
+
+              <h3 class="font-serif font-bold text-lg text-amber-100 mb-3 truncate">${escapeHTML(outfit.name)}</h3>
+
+              <!-- Quick Slot Summary -->
+              <div class="space-y-1.5 mb-4">
+                ${Object.entries(slotIcons).map(([key, config]) => {
+                  const val = outfit.slots[key];
+                  if (!val || !val.trim()) return '';
+                  return `
+                    <div class="flex items-center gap-2 text-xs">
+                      <span class="text-slate-500 font-medium w-24 shrink-0 flex items-center gap-1">
+                        <i data-lucide="${config.icon}" class="w-3 h-3 text-amber-400"></i> ${config.label}:
+                      </span>
+                      <span class="text-slate-200 font-semibold truncate">${escapeHTML(val)}</span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- Card Bottom Actions -->
+            <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+              <span class="text-[10px] text-slate-500 font-semibold">${filledSlotsCount}/8 Slots filled</span>
+              
+              <div class="flex items-center gap-1">
+                <button onclick="duplicateOutfit('${outfit.id}')" title="Duplicate" class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-amber-300">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="editOutfit('${outfit.id}')" title="Edit" class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-amber-300">
+                  <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="deleteOutfit('${outfit.id}')" title="Delete" class="p-1.5 rounded hover:bg-red-950 text-slate-400 hover:text-red-400">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Dynamic Game Filter Dropdown Options
+    function renderGameFilterOptions() {
+      const select = document.getElementById('gameFilterSelect');
+      const games = Array.from(new Set(outfits.map(o => o.game).filter(Boolean)));
+
+      const options = games.map(g => {
+        const isSelected = selectedGame.toLowerCase() === g.toLowerCase();
+        return `<option value="${escapeHTML(g)}" ${isSelected ? 'selected' : ''} class="bg-slate-900 text-slate-100">${escapeHTML(g)}</option>`;
+      }).join('');
+
+      select.innerHTML = `<option value="all" class="bg-slate-900 text-slate-100">All Games</option>` + options;
+    }
+
+    // Dynamic Class/Style Tags Filter Bar
+    function renderTags() {
+      const container = document.getElementById('tagFilterContainer');
+      const tags = Array.from(new Set(outfits.map(o => o.tag).filter(Boolean)));
+
+      const allBtnHTML = `
+        <button onclick="filterByTag('all')" data-tag="all" class="tag-filter-btn px-3 py-1 rounded-full text-xs font-medium ${selectedTag === 'all' ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'} shrink-0 transition-all">
+          All
+        </button>
+      `;
+
+      const tagsHTML = tags.map(t => {
+        const isSelected = selectedTag.toLowerCase() === t.toLowerCase();
+        return `
+          <button onclick="filterByTag('${escapeHTML(t)}')" data-tag="${escapeHTML(t)}" class="tag-filter-btn px-3 py-1 rounded-full text-xs font-medium ${isSelected ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'} shrink-0 transition-all">
+            ${escapeHTML(t)}
+          </button>
+        `;
+      }).join('');
+
+      container.innerHTML = `<span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1 shrink-0"><i data-lucide="filter" class="w-3.5 h-3.5"></i> Class/Style:</span>` + allBtnHTML + tagsHTML;
+      lucide.createIcons();
+    }
+
+    // Game Filter Handler
+    function filterByGame(game) {
+      selectedGame = game;
+      currentPageIndex = 0;
+      render();
+    }
+
+    // Tag Filter Handler
+    function filterByTag(tag) {
+      selectedTag = tag;
+      currentPageIndex = 0;
+      renderTags();
+      render();
+    }
+
+    // View Swapper
+    function switchView(mode) {
+      currentView = mode;
+      if (mode === 'flick') {
+        viewFlickBtn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 bg-amber-500 text-slate-950 shadow-sm";
+        viewGridBtn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium text-slate-400 hover:text-amber-200 transition-all duration-200";
+      } else {
+        viewGridBtn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 bg-amber-500 text-slate-950 shadow-sm";
+        viewFlickBtn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium text-slate-400 hover:text-amber-200 transition-all duration-200";
+      }
+      render();
+    }
+
+    // Page Carousel Navigation
+    function changePage(delta) {
+      const filtered = getFilteredOutfits();
+      const newIndex = currentPageIndex + delta;
+      if (newIndex >= 0 && newIndex < filtered.length) {
+        currentPageIndex = newIndex;
+        render();
+      }
+    }
+
+    // Search Handler
+    function handleSearch() {
+      searchQuery = document.getElementById('searchInput').value;
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (searchQuery.length > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+      currentPageIndex = 0;
+      render();
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      searchQuery = '';
+      document.getElementById('clearSearchBtn').classList.add('hidden');
+      currentPageIndex = 0;
+      render();
+    }
+
+    // Form Custom Game Input Toggle
+    function toggleCustomGameInput(val) {
+      const customInput = document.getElementById('outfitCustomGame');
+      if (val === 'custom') {
+        customInput.classList.remove('hidden');
+        customInput.focus();
+      } else {
+        customInput.classList.add('hidden');
+        customInput.value = '';
+      }
+    }
+
+    // Open Modal (Add / Edit)
+    function openModal(editId = null) {
+      const titleEl = document.getElementById('modalTitle');
+      outfitForm.reset();
+      document.getElementById('outfitId').value = '';
+      document.getElementById('outfitCustomGame').classList.add('hidden');
+
+      if (editId) {
+        const item = outfits.find(o => o.id === editId);
+        if (item) {
+          titleEl.innerText = "Edit Outfit Record";
+          document.getElementById('outfitId').value = item.id;
+          document.getElementById('outfitName').value = item.name || '';
+          document.getElementById('outfitTag').value = item.tag || '';
+          document.getElementById('outfitNotes').value = item.notes || '';
+
+          // Game Select Setup
+          const gameSelect = document.getElementById('outfitGameSelect');
+          const options = Array.from(gameSelect.options).map(o => o.value);
+          if (options.includes(item.game)) {
+            gameSelect.value = item.game;
+          } else {
+            gameSelect.value = 'custom';
+            const customInput = document.getElementById('outfitCustomGame');
+            customInput.classList.remove('hidden');
+            customInput.value = item.game || '';
+          }
+
+          document.getElementById('slotHeadgear').value = item.slots.headgear || '';
+          document.getElementById('slotChest').value = item.slots.chest || '';
+          document.getElementById('slotCloak').value = item.slots.cloak || '';
+          document.getElementById('slotGloves').value = item.slots.gloves || '';
+          document.getElementById('slotBoots').value = item.slots.boots || '';
+          document.getElementById('slotWeapon1').value = item.slots.weapon1 || '';
+          document.getElementById('slotWeapon2').value = item.slots.weapon2 || '';
+          document.getElementById('slotShieldWeapon3').value = item.slots.shieldWeapon3 || '';
+        }
+      } else {
+        titleEl.innerText = "Forge Outfit Record";
+      }
+
+      modal.classList.remove('pointer-events-none', 'opacity-0');
+      modalCard.classList.remove('scale-95');
+      modalCard.classList.add('scale-100');
+    }
+
+    // Close Modal
+    function closeModal() {
+      modalCard.classList.remove('scale-100');
+      modalCard.classList.add('scale-95');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    // Save Form Handler
+    function saveOutfit(event) {
+      event.preventDefault();
+      const id = document.getElementById('outfitId').value;
+      const name = document.getElementById('outfitName').value.trim();
+      const tag = document.getElementById('outfitTag').value.trim();
+      const notes = document.getElementById('outfitNotes').value.trim();
+
+      // Determine Game Title
+      const gameSelectVal = document.getElementById('outfitGameSelect').value;
+      let game = gameSelectVal;
+      if (gameSelectVal === 'custom') {
+        game = document.getElementById('outfitCustomGame').value.trim() || 'General';
+      }
+
+      const slots = {
+        headgear: document.getElementById('slotHeadgear').value.trim(),
+        chest: document.getElementById('slotChest').value.trim(),
+        cloak: document.getElementById('slotCloak').value.trim(),
+        gloves: document.getElementById('slotGloves').value.trim(),
+        boots: document.getElementById('slotBoots').value.trim(),
+        weapon1: document.getElementById('slotWeapon1').value.trim(),
+        weapon2: document.getElementById('slotWeapon2').value.trim(),
+        shieldWeapon3: document.getElementById('slotShieldWeapon3').value.trim()
+      };
+
+      if (!name) return;
+
+      if (id) {
+        // Edit existing
+        const idx = outfits.findIndex(o => o.id === id);
+        if (idx !== -1) {
+          outfits[idx] = { ...outfits[idx], name, game, tag, notes, slots };
+          showToast("Outfit updated successfully!");
+        }
+      } else {
+        // Create new
+        const newOutfit = {
+          id: 'outfit-' + Date.now(),
+          name,
+          game,
+          tag,
+          notes,
+          slots,
+          createdAt: Date.now()
+        };
+        outfits.unshift(newOutfit);
+        currentPageIndex = 0;
+        showToast("New outfit forged and logged!");
+      }
+
+      saveStorage();
+      renderGameFilterOptions();
+      renderTags();
+      render();
+      closeModal();
+    }
+
+    // Duplicate Action
+    function duplicateOutfit(id) {
+      const original = outfits.find(o => o.id === id);
+      if (!original) return;
+
+      const clone = {
+        ...JSON.parse(JSON.stringify(original)),
+        id: 'outfit-' + Date.now(),
+        name: `${original.name} (Copy)`,
+        createdAt: Date.now()
+      };
+
+      outfits.unshift(clone);
+      saveStorage();
+      renderGameFilterOptions();
+      renderTags();
+      showToast("Outfit duplicated!");
+      currentPageIndex = 0;
+      render();
+    }
+
+    // Edit Trigger
+    function editOutfit(id) {
+      openModal(id);
+    }
+
+    // Delete Trigger
+    function deleteOutfit(id) {
+      const outfit = outfits.find(o => o.id === id);
+      if (!outfit) return;
+
+      if (confirm(`Are you sure you want to strike "${outfit.name}" from your logbook?`)) {
+        outfits = outfits.filter(o => o.id !== id);
+        saveStorage();
+        renderGameFilterOptions();
+        renderTags();
+        showToast("Outfit removed from tome.", true);
+        render();
+      }
+    }
+
+    // Toast Notification helper
+    function showToast(message, isWarning = false) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.innerText = message;
+      if (isWarning) {
+        toast.className = "fixed bottom-6 right-6 z-50 bg-slate-900 border border-red-500/40 text-red-200 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300";
+        toastIcon.className = "w-5 h-5 text-red-400";
+      } else {
+        toast.className = "fixed bottom-6 right-6 z-50 bg-slate-900 border border-amber-500/40 text-amber-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300";
+        toastIcon.className = "w-5 h-5 text-amber-400";
+      }
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    // Helper Utility
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        }[tag] || tag)
+      );
+    }
+  </script>
+</body>
+</html>
