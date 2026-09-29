@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ribbons</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+  body { background: #2a2530; }
+  #bg {
+    position: fixed;
+    inset: 0;
+    background-image: linear-gradient(180deg, #0a3c42 0%, #5c1a2c 100%);
+  }
+  /* grey dot grid, rotated 45 degrees; oversized so the rotated square still covers the page */
+  #dots {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 150vmax;
+    height: 150vmax;
+    transform: translate(-50%, -50%) rotate(45deg);
+    background-image: radial-gradient(circle, rgba(175, 175, 175, 0.6) 1.3px, transparent 1.9px);
+    background-size: 48px 48px;
+    background-position: center;
+    pointer-events: none;
+  }
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+  }
+  .back {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #000;
+    color: #fff;
+    border: 1px solid #fff;
+    font: 11px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+    text-decoration: none;
+    opacity: 0.8;
+    transition: opacity 0.15s;
+  }
+  .back:hover, .back:focus-visible { opacity: 1; }
+  .back:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<a class="back" href="index.html" aria-label="Back to index" title="Back to index">&#8592;</a>
+<div id="bg" aria-hidden="true"></div>
+<div id="dots" aria-hidden="true"></div>
+<canvas id="ribbons" aria-hidden="true"></canvas>
+
+<script>
+// Static background: gradient with lo-fi grain (the dot grid sits on its own layer above).
+(() => {
+  const bg = document.getElementById("bg");
+  const g = document.createElement("canvas");
+  const n = 128, cell = 2;
+  g.width = g.height = n * cell;
+  const c = g.getContext("2d");
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const light = Math.random() < 0.5;
+      c.fillStyle = light
+        ? `rgba(255, 255, 255, ${(Math.random() * 0.09).toFixed(3)})`
+        : `rgba(0, 0, 0, ${(Math.random() * 0.16).toFixed(3)})`;
+      c.fillRect(x * cell, y * cell, cell, cell);
+    }
+  }
+  const grain = `url(${g.toDataURL()})`;
+  const set = (grad) => { bg.style.backgroundImage = `${grain}, ${grad}`; };
+  set("linear-gradient(180deg, #0a3c42 0%, #5c1a2c 100%)");
+  const before = bg.style.backgroundImage;
+  set("linear-gradient(in oklab 180deg, #0a3c42 0%, #5c1a2c 100%)");
+  if (!bg.style.backgroundImage || bg.style.backgroundImage === "") bg.style.backgroundImage = before;
+  bg.style.backgroundSize = "256px 256px, 100% 100%";
+})();
+
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("ribbons");
+  const ctx = canvas.getContext("2d");
+
+  const mk = () => { const c = document.createElement("canvas"); return [c, c.getContext("2d")]; };
+  const [L1, l1] = mk();   // down-left ribbons, later the pieces of them that pass over
+  const [L2, l2] = mk();   // down-right ribbons (also the mask for shadows cast onto them)
+  const [L3, l3] = mk();   // scratch for masked shadows
+  const [C1, c1] = mk();   // cached layers holding every ribbon that is currently whole
+  const [C2, c2] = mk();
+  const [C3, c3] = mk();
+  const [SM, sm] = mk();   // low-res canvas where the big blurs are computed (much cheaper)
+  const SH_SCALE = 0.33;
+
+  const SQ = Math.SQRT1_2;
+  const PI = Math.PI;
+
+  // Springs for the ribbon ends: quick and springy pulling back, softer sliding home.
+  const K_RETRACT = 170, K_EXTEND = 90, ZETA = 0.62, V_MAX = 1600;
+  // The fold is deliberately slower so it can be seen curling over and back.
+  const FOLD_TIME = 0.8;   // seconds to fold, and to unfold
+  const CURL = 0.45;        // share of the folding end that bends; the rest stays straight
+  const CURL_STEPS = 10;
+  const RIBBON_COLOURS = [[252, 253, 243], [243, 249, 253]];   // #fcfdf3, #f3f9fd
+
+  // Shadows (css px)
+  const SH_BLUR = 14, SH_X = 3, SH_Y = 6, SH_COLOR = "rgba(0, 0, 0, 0.6)";
+  const FLAP_SH = [0.16, 0.3];   // how far a raised flap's shadow travels per px of height
+  const LINE = 1.6;
+
+  // Light for shading the folding flaps (towards the light: up-left and above)
+  const LIGHT = (() => { const v = [-0.3, -0.55, 1], m = Math.hypot(...v); return v.map((n) => n / m); })();
+
+  const TEX_LEN = 640, TEX_VARIANTS = 6;
+
+  let W = 0, H = 0, dpr = 1;
+  let S, HW, R, F;
+  let A = [], B = [];
+  let textures = [], pats1 = [], pats2 = [], patsC1 = [], patsC2 = [], patsC3 = [];
+  const rejoined = [];   // ribbons that became whole since the last frame
+
+  const pointer = { x: 0, y: 0, active: false };
+  let running = false, last = 0;
+
+  const toX = (al, be) => (al - be) * SQ;
+  const toY = (al, be) => (al + be) * SQ;
+
+  // kind "A" runs along alpha (down-right); kind "B" runs along beta (down-left)
+  const px = (kind, along, across) => kind === "A" ? toX(along, across) : toX(across, along);
+  const py = (kind, along, across) => kind === "A" ? toY(along, across) : toY(across, along);
+  const DIR = { A: [SQ, SQ], B: [-SQ, SQ] };
+
+  // ---------- texture ----------
+
+  function rand(seed) {
+    let t = seed >>> 0;
+    return () => {
+      t += 0x6d2b79f5;
+      let r = Math.imul(t ^ (t >>> 15), 1 | t);
+      r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+      return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // A grosgrain-like ribbon: fine cross ribs, soft mottling and a few slubs.
+  // It tiles along the ribbon, and its marks are what show the ribbon sliding.
+  function makeTexture(seed, RIBBON) {
+    const rnd = rand(seed);
+    const w = Math.round(TEX_LEN * dpr), h = Math.max(2, Math.round(2 * HW * dpr));
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const g = c.getContext("2d");
+    const img = g.createImageData(w, h), d = img.data;
+
+    const harm = [];
+    for (let k = 1; k <= 9; k++) harm.push([k, rnd() * PI * 2, (0.6 + rnd() * 0.8) / k]);
+    const ribs = Math.round(TEX_LEN / 2.8);
+    const ribJit = new Float32Array(ribs).map(() => 0.5 + rnd());
+    const flecks = [];
+    for (let n = 0; n < 22; n++) {
+      flecks.push({
+        x: rnd() * TEX_LEN, y: rnd() * 2 * HW,
+        len: 3 + rnd() * 14, wid: 0.6 + rnd() * 1.6, dark: 0.12 + rnd() * 0.14,
+        light: rnd() < 0.35
+      });
+    }
+
+    const along = new Float32Array(w);
+    for (let x = 0; x < w; x++) {
+      const u = x / dpr;
+      let m = 0;
+      for (const [k, ph, a] of harm) m += a * Math.sin((2 * PI * k * u) / TEX_LEN + ph);
+      const rp = (u / TEX_LEN) * ribs, ri = Math.floor(rp) % ribs;
+      const rib = Math.pow(0.5 + 0.5 * Math.cos(2 * PI * rp), 3) * ribJit[ri];
+      along[x] = 0.025 * m - 0.075 * rib - 0.03;
+    }
+
+    for (let y = 0; y < h; y++) {
+      const v = y / dpr;
+      const edge = Math.min(v, 2 * HW - v);
+      const edgeShade = edge < 3 ? (3 - edge) * 0.02 : 0;
+      for (let x = 0; x < w; x++) {
+        const f = 1 + along[x] - edgeShade + (rnd() - 0.5) * 0.09;
+        const i = (y * w + x) * 4;
+        d[i] = Math.min(255, RIBBON[0] * f); d[i + 1] = Math.min(255, RIBBON[1] * f); d[i + 2] = Math.min(255, RIBBON[2] * f); d[i + 3] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+
+    // slubs: small elongated marks running across the ribbon, wrapped so the tile repeats
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (const fl of flecks) {
+      for (const dx of [-TEX_LEN, 0, TEX_LEN]) {
+        g.fillStyle = fl.light
+          ? `rgba(255, 255, 255, ${fl.dark * 1.4})`
+          : `rgba(70, 72, 68, ${fl.dark})`;
+        g.beginPath();
+        g.ellipse(fl.x + dx, fl.y, fl.wid, fl.len / 2, 0, 0, PI * 2);
+        g.fill();
+      }
+    }
+    return c;
+  }
+
+  function buildTextures() {
+    textures = [];
+    for (let n = 0; n < TEX_VARIANTS; n++) textures.push(makeTexture(1234 + n * 7919, RIBBON_COLOURS[n % RIBBON_COLOURS.length]));
+    pats1 = textures.map((t) => l1.createPattern(t, "repeat"));
+    pats2 = textures.map((t) => l2.createPattern(t, "repeat"));
+    patsC1 = textures.map((t) => c1.createPattern(t, "repeat"));
+    patsC2 = textures.map((t) => c2.createPattern(t, "repeat"));
+    patsC3 = textures.map((t) => c3.createPattern(t, "repeat"));
+  }
+
+  // Map texture space (q along, v across, in texture pixels) onto the page.
+  // along = sAlong * q + oAlong, across = v + across0
+  function setPat(kind, pat, sAlong, oAlong, across0) {
+    const k = 1 / dpr;
+    let m;
+    if (kind === "A") {
+      m = [SQ * sAlong * k, SQ * sAlong * k, -SQ * k, SQ * k, SQ * (oAlong - across0), SQ * (oAlong + across0)];
+    } else {
+      m = [-SQ * sAlong * k, SQ * sAlong * k, SQ * k, SQ * k, SQ * (across0 - oAlong), SQ * (across0 + oAlong)];
+    }
+    pat.setTransform(new DOMMatrix(m));
+  }
+
+  // ---------- setup ----------
+
+  function strand(kind, i, from, to, rnd) {
+    return {
+      kind, i, from, to,
+      open: false, lo: 0, hi: 0, vlo: 0, vhi: 0, th: 0, fp: 0, m0: 0,
+      tex: -rnd() * TEX_LEN,
+      tv: Math.floor(rnd() * TEX_VARIANTS)
+    };
+  }
+
+  function build() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    for (const c of [canvas, L1, L2, L3, C1, C2, C3]) {
+      c.width = Math.round(W * dpr);
+      c.height = Math.round(H * dpr);
+    }
+    SM.width = Math.max(1, Math.round(W * dpr * SH_SCALE));
+    SM.height = Math.max(1, Math.round(H * dpr * SH_SCALE));
+    S = Math.max(46, Math.min(92, Math.min(W, H) / 10));
+    HW = S * 0.445;
+    R = S * 0.8;
+    F = S * 0.5;       // length of the end that folds over
+
+    buildTextures();
+
+    const rnd = rand(42);
+    const pad = S * 3;
+    const aMin = -pad, aMax = (W + H) * SQ + pad;
+    const bMin = -W * SQ - pad, bMax = H * SQ + pad;
+    A = [];
+    for (let i = Math.floor(bMin / S); i <= Math.ceil(bMax / S); i++) A.push(strand("A", i, aMin, aMax, rnd));
+    B = [];
+    for (let j = Math.floor(aMin / S); j <= Math.ceil(aMax / S); j++) B.push(strand("B", j, bMin, bMax, rnd));
+    rejoined.length = 0;
+    cacheAll();
+  }
+
+  // ---------- motion ----------
+
+  function springHead(x, v, t, retracting, dt) {
+    const K = retracting ? K_RETRACT : K_EXTEND;
+    const D = 2 * ZETA * Math.sqrt(K);
+    v += (K * (t - x) - D * v) * dt;
+    if (v > V_MAX) v = V_MAX; else if (v < -V_MAX) v = -V_MAX;
+    return [x + v * dt, v];
+  }
+
+  const smooth = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
+
+  // Each ribbon can part into two ends that slide along the ribbon and fold over.
+  // lo / hi are where the ends would be if laid flat; the crease sits F behind them.
+  function update(set, cPerp, cAlong, dt) {
+    let busy = false;
+    for (const s of set) {
+      let has = false, tLo = 0, tHi = 0, thT = 0, fT = 1;
+      if (pointer.active) {
+        const dm = Math.max(0, Math.abs(s.i * S - cPerp) - HW);
+        if (dm < R) {
+          const h = Math.sqrt(R * R - dm * dm) + 2;
+          const tuck = F - (F * CURL) / PI;   // how far a fully folded end sits back
+          tLo = cAlong - h + tuck; tHi = cAlong + h - tuck;
+          if (tLo > tHi) tLo = tHi = (tLo + tHi) / 2;
+          has = true; thT = PI;
+        }
+      }
+      if (has) {
+        if (!s.open) {
+          s.open = true; s.lo = s.hi = s.m0 = cAlong;
+          s.vlo = s.vhi = 0; s.th = 0; s.fp = 0;
+        }
+      } else {
+        if (!s.open) continue;
+        // unfold, and let the ends slide home only as fast as they uncurl
+        const mid = (s.lo + s.hi) / 2, room = (F - (F * CURL) / PI) * (s.th / PI);
+        tLo = mid - room; tHi = mid + room;
+        thT = 0;
+        fT = 0;
+      }
+
+      [s.lo, s.vlo] = springHead(s.lo, s.vlo, tLo, tLo < s.lo, dt);
+      [s.hi, s.vhi] = springHead(s.hi, s.vhi, tHi, tHi > s.hi, dt);
+      if (s.lo > s.hi) {
+        const m = (s.lo + s.hi) / 2, v = (s.vlo + s.vhi) / 2;
+        s.lo = s.hi = m; s.vlo = s.vhi = v;
+      }
+
+      // fold progress runs at a fixed rate, eased, so each fold / unfold takes FOLD_TIME
+      const stepF = dt / FOLD_TIME;
+      s.fp = fT > s.fp ? Math.min(fT, s.fp + stepF) : Math.max(fT, s.fp - stepF);
+      s.th = PI * smooth(s.fp);
+
+      if (!has && s.hi - s.lo < 0.5 && s.fp <= 0) {
+        s.tex += (s.lo + s.hi) / 2 - s.m0;   // the ribbon is whole again
+        s.open = false;
+        rejoined.push(s);
+        continue;
+      }
+      if (Math.abs(s.lo - tLo) > 0.05 || Math.abs(s.hi - tHi) > 0.05 ||
+          Math.abs(s.vlo) > 0.5 || Math.abs(s.vhi) > 0.5 ||
+          s.fp !== fT || !has) busy = true;
+    }
+    return busy;
+  }
+
+  // ---------- geometry ----------
+
+  function rectK(p, kind, al0, al1, ac0, ac1) {
+    p.moveTo(px(kind, al0, ac0), py(kind, al0, ac0));
+    p.lineTo(px(kind, al1, ac0), py(kind, al1, ac0));
+    p.lineTo(px(kind, al1, ac1), py(kind, al1, ac1));
+    p.lineTo(px(kind, al0, ac1), py(kind, al0, ac1));
+    p.closePath();
+  }
+  function segK(p, kind, al0, ac0, al1, ac1) {
+    p.moveTo(px(kind, al0, ac0), py(kind, al0, ac0));
+    p.lineTo(px(kind, al1, ac1), py(kind, al1, ac1));
+  }
+
+  // Flat stretches of a ribbon, each with the texture offset that moves with it.
+  function pieces(s) {
+    if (!s.open) return [{ a: s.from, b: s.to, shift: s.tex }];
+    const out = [];
+    const cLo = s.lo - F, cHi = s.hi + F;
+    if (cLo > s.from) out.push({ a: s.from, b: cLo, shift: s.tex + s.lo - s.m0 });
+    if (cHi < s.to) out.push({ a: cHi, b: s.to, shift: s.tex + s.hi - s.m0 });
+    return out;
+  }
+  function flapsOf(s) {
+    return [
+      { s, c: s.lo - F, dir: 1, shift: s.tex + s.lo - s.m0 },
+      { s, c: s.hi + F, dir: -1, shift: s.tex + s.hi - s.m0 }
+    ];
+  }
+
+  // ---------- drawing ----------
+
+  function begin(c) {
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.globalCompositeOperation = "source-over";
+    c.globalAlpha = 1;
+    c.clearRect(0, 0, c.canvas.width, c.canvas.height);
+    prep(c);
+  }
+  function prep(c) {
+    c.globalCompositeOperation = "source-over";
+    c.globalAlpha = 1;
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.strokeStyle = "#000";
+    c.lineWidth = LINE;
+    c.lineJoin = "miter";
+  }
+
+  function shadowOff(c) {
+    c.shadowColor = "transparent";
+    c.shadowBlur = 0; c.shadowOffsetX = 0; c.shadowOffsetY = 0;
+  }
+
+  // Draw only the blurred shadow of a path (the shape itself lands off-canvas).
+  function softShadow(c, path, color, blur) {
+    const big = c.canvas.width + 400;
+    c.save();
+    c.shadowColor = color;
+    c.shadowBlur = blur * dpr;
+    c.shadowOffsetX = big;
+    c.shadowOffsetY = 0;
+    c.translate(-big / dpr, 0);
+    c.fillStyle = "#000";
+    c.fill(path);
+    c.restore();
+  }
+
+  function onScreen(kind, along, across, margin) {
+    const x = px(kind, along, across), y = py(kind, along, across);
+    return x > -margin && x < W + margin && y > -margin && y < H + margin;
+  }
+
+  // Shape of a folding end: it bends through angle th over its first part, then runs straight.
+  // Returns samples along the flap: t (distance along material), x (along the page), z (height), phi.
+  function curl(th) {
+    const bend = F * CURL, pts = [];
+    const r = th > 1e-4 ? bend / th : 0;
+    for (let k = 0; k <= CURL_STEPS; k++) {
+      const t = (bend * k) / CURL_STEPS;
+      if (th <= 1e-4) pts.push([t, t, 0, 0]);
+      else {
+        const ph = (th * t) / bend;
+        pts.push([t, r * Math.sin(ph), r * (1 - Math.cos(ph)), ph]);
+      }
+    }
+    const [, xb, zb] = pts[pts.length - 1], rest = F - bend;
+    pts.push([F, xb + rest * Math.cos(th), zb + rest * Math.sin(th), th]);
+    return pts;
+  }
+
+  function drawFlaps(c, kind, flaps, pats) {
+    if (!flaps.length) return;
+    const [dx, dy] = DIR[kind];
+    const shapes = new Map();
+    const shapeOf = (th) => {
+      const key = th.toFixed(4);
+      if (!shapes.has(key)) shapes.set(key, curl(th));
+      return shapes.get(key);
+    };
+
+    // shadows of the ends as they lift and curl over
+    const sh = new Path2D();
+    for (const f of flaps) {
+      const th = f.s.th;
+      if (th < 0.02) continue;
+      const pts = shapeOf(th);
+      const ac0 = f.s.i * S - HW, ac1 = f.s.i * S + HW;
+      const lift = th / PI;
+      for (let k = 0; k < pts.length - 1; k++) {
+        const [, x0, z0] = pts[k], [, x1, z1] = pts[k + 1];
+        const a0 = f.c + f.dir * x0, a1 = f.c + f.dir * x1;
+        const o0x = FLAP_SH[0] * z0 + 1.5 * lift, o0y = FLAP_SH[1] * z0 + 3 * lift;
+        const o1x = FLAP_SH[0] * z1 + 1.5 * lift, o1y = FLAP_SH[1] * z1 + 3 * lift;
+        sh.moveTo(px(kind, a0, ac0) + o0x, py(kind, a0, ac0) + o0y);
+        sh.lineTo(px(kind, a0, ac1) + o0x, py(kind, a0, ac1) + o0y);
+        sh.lineTo(px(kind, a1, ac1) + o1x, py(kind, a1, ac1) + o1y);
+        sh.lineTo(px(kind, a1, ac0) + o1x, py(kind, a1, ac0) + o1y);
+        sh.closePath();
+      }
+    }
+    softShadow(c, sh, "rgba(0, 0, 0, 0.4)", 6);
+
+    for (const f of flaps) {
+      const s = f.s, th = s.th;
+      const ac0 = s.i * S - HW, ac1 = s.i * S + HW;
+      const pts = shapeOf(th);
+      const pat = pats[s.tv];
+      const qc = f.c - f.shift;          // texture coordinate at the crease
+      const ddx = dx * f.dir, ddy = dy * f.dir;
+      const edges = new Path2D();
+
+      // strips from the crease to the tip; later strips are higher, so they're drawn on top
+      for (let k = 0; k < pts.length - 1; k++) {
+        const [t0, x0, , p0] = pts[k], [t1, x1, , p1] = pts[k + 1];
+        const span = x1 - x0;
+        if (Math.abs(span) < 0.05) continue;
+        const sc = span / (t1 - t0);
+        const grow = 0.35 * Math.sign(span);            // tiny overlap hides seams between strips
+        const a0 = f.c + f.dir * (x0 - grow * (k > 0 ? 1 : 0)), a1 = f.c + f.dir * (x1 + grow);
+        const strip = new Path2D();
+        rectK(strip, kind, Math.min(a0, a1), Math.max(a0, a1), ac0, ac1);
+        setPat(kind, pat, sc, f.c + f.dir * (x0 - sc * t0) - sc * qc, ac0);
+        c.fillStyle = pat;
+        c.fill(strip);
+
+        const ph = (p0 + p1) / 2, sn = Math.sin(ph), cs = Math.cos(ph);
+        const n = ph < PI / 2 ? [-ddx * sn, -ddy * sn, cs] : [ddx * sn, ddy * sn, -cs];
+        const bright = (n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]) / LIGHT[2];
+        if (bright < 0.995) {
+          c.fillStyle = `rgba(10, 20, 35, ${Math.min(0.55, (1 - bright) * 0.5)})`;
+          c.fill(strip);
+        } else if (bright > 1.005) {
+          c.fillStyle = `rgba(255, 255, 255, ${Math.min(0.35, (bright - 1) * 0.7)})`;
+          c.fill(strip);
+        }
+        segK(edges, kind, f.c + f.dir * x0, ac0, f.c + f.dir * x1, ac0);
+        segK(edges, kind, f.c + f.dir * x0, ac1, f.c + f.dir * x1, ac1);
+      }
+      c.stroke(edges);
+
+      // tip edge, and the outline where the curl turns over
+      const tipX = f.c + f.dir * pts[pts.length - 1][1];
+      const tipE = new Path2D();
+      segK(tipE, kind, tipX, ac0, tipX, ac1);
+      c.globalAlpha = Math.min(1, (s.hi - s.lo) / 3 + th * 2);
+      c.stroke(tipE);
+      if (th > PI / 2) {
+        const turn = f.c + f.dir * ((F * CURL) / th);
+        const tu = new Path2D();
+        segK(tu, kind, turn, ac0, turn, ac1);
+        c.globalAlpha = Math.min(1, (th - PI / 2) * 3);
+        c.stroke(tu);
+      }
+      c.globalAlpha = 1;
+    }
+  }
+
+  function drawBase(c, set, kind, pats) {
+    const edges = new Path2D();
+    const flaps = [];
+    for (const s of set) {
+      const ac0 = s.i * S - HW, ac1 = s.i * S + HW;
+      const pat = pats[s.tv];
+      for (const p of pieces(s)) {
+        const path = new Path2D();
+        rectK(path, kind, p.a, p.b, ac0, ac1);
+        setPat(kind, pat, 1, p.shift, ac0);
+        c.fillStyle = pat;
+        c.fill(path);
+        segK(edges, kind, p.a, ac0, p.b, ac0);
+        segK(edges, kind, p.a, ac1, p.b, ac1);
+      }
+      if (s.open) flaps.push(...flapsOf(s));
+    }
+    c.stroke(edges);
+    drawFlaps(c, kind, flaps, pats);
+  }
+
+  // Blurred drop shadow of a layer, computed at low resolution and scaled up.
+  // With a mask, the shadow is only kept where the mask layer has something.
+  function dropShadow(src, mask) {
+    const big = SM.width + 400, k = dpr * SH_SCALE;
+    sm.setTransform(1, 0, 0, 1, 0, 0);
+    sm.clearRect(0, 0, SM.width, SM.height);
+    sm.shadowColor = SH_COLOR;
+    sm.shadowBlur = SH_BLUR * k;
+    sm.shadowOffsetX = big + SH_X * k;
+    sm.shadowOffsetY = SH_Y * k;
+    sm.drawImage(src, -big, 0, SM.width, SM.height);
+    shadowOff(sm);
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    shadowOff(ctx);
+    ctx.imageSmoothingEnabled = true;
+    if (!mask) {
+      ctx.drawImage(SM, 0, 0, canvas.width, canvas.height);
+      return;
+    }
+    l3.setTransform(1, 0, 0, 1, 0, 0);
+    l3.globalCompositeOperation = "source-over";
+    l3.clearRect(0, 0, L3.width, L3.height);
+    l3.imageSmoothingEnabled = true;
+    l3.drawImage(SM, 0, 0, L3.width, L3.height);
+    l3.globalCompositeOperation = "destination-in";
+    l3.drawImage(mask, 0, 0);
+    l3.globalCompositeOperation = "source-over";
+    ctx.drawImage(L3, 0, 0);
+  }
+
+  function drawOvers(c, list, pats) {
+    const clip = new Path2D(), edges = new Path2D();
+    const iFirst = A[0].i, iLast = A[A.length - 1].i;
+    const flaps = [];
+    for (const s of list) {
+      const j = s.i, a0 = j * S - HW, a1 = j * S + HW;
+      const pat = pats[s.tv];
+      const ps = pieces(s);
+      for (let i = iFirst; i <= iLast; i++) {
+        if ((((i + j) % 2) + 2) % 2 !== 1) continue;
+        if (!onScreen("B", i * S, j * S, S)) continue;
+        const c0 = i * S - HW - LINE, c1 = i * S + HW + LINE;
+        rectK(clip, "B", c0, c1, a0 - LINE, a1 + LINE);
+        for (const p of ps) {
+          const u0 = Math.max(p.a, c0), u1 = Math.min(p.b, c1);
+          if (u1 - u0 < 0.01) continue;
+          const r = new Path2D();
+          rectK(r, "B", u0, u1, a0, a1);
+          setPat("B", pat, 1, p.shift, a0);
+          c.fillStyle = pat;
+          c.fill(r);
+          segK(edges, "B", u0, a0, u1, a0);
+          segK(edges, "B", u0, a1, u1, a1);
+        }
+      }
+      if (s.open) flaps.push(...flapsOf(s));
+    }
+    c.stroke(edges);
+    if (flaps.length) {
+      // folds that sit over a crossing stay on top there
+      c.save();
+      c.clip(clip);
+      drawFlaps(c, "B", flaps, pats);
+      c.restore();
+    }
+  }
+
+  // Remove ribbons' strips from a layer so they can be redrawn in their new state.
+  function erase(c, list) {
+    if (!list.length) return;
+    const p = new Path2D();
+    for (const s of list) {
+      const m = LINE * 1.5;
+      rectK(p, s.kind, s.from, s.to, s.i * S - HW - m, s.i * S + HW + m);
+    }
+    prep(c);
+    c.globalCompositeOperation = "destination-out";
+    c.fillStyle = "#000";
+    c.fill(p);
+    c.globalCompositeOperation = "source-over";
+  }
+
+  function cacheAll() {
+    begin(c1); drawBase(c1, B, "B", patsC1);
+    begin(c2); drawBase(c2, A, "A", patsC2);
+    begin(c3); drawOvers(c3, B, patsC3);
+  }
+
+  function recache() {
+    if (!rejoined.length) return;
+    const ra = rejoined.filter((s) => s.kind === "A");
+    const rb = rejoined.filter((s) => s.kind === "B");
+    rejoined.length = 0;
+    if (rb.length) {
+      erase(c1, rb); prep(c1); drawBase(c1, rb, "B", patsC1);
+      erase(c3, rb); prep(c3); drawOvers(c3, rb, patsC3);
+    }
+    if (ra.length) {
+      erase(c2, ra); prep(c2); drawBase(c2, ra, "A", patsC2);
+    }
+  }
+
+  // A working layer = cached whole ribbons, minus the ones in motion, plus those drawn live.
+  function layerFrom(l, cache, live) {
+    begin(l);
+    l.setTransform(1, 0, 0, 1, 0, 0);
+    l.drawImage(cache, 0, 0);
+    erase(l, live);
+    prep(l);
+  }
+
+  function render() {
+    recache();
+    const openA = A.filter((s) => s.open), openB = B.filter((s) => s.open);
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 1. down-left ribbons
+    layerFrom(l1, C1, openB);
+    drawBase(l1, openB, "B", pats1);
+    dropShadow(L1, null); ctx.drawImage(L1, 0, 0);
+
+    // 2. down-right ribbons on top; their shadow comes from where they are right now
+    layerFrom(l2, C2, openA);
+    drawBase(l2, openA, "A", pats2);
+    dropShadow(L2, null); ctx.drawImage(L2, 0, 0);
+
+    // 3. down-left pieces passing over down-right ribbons at alternate crossings
+    layerFrom(l1, C3, openB);
+    drawOvers(l1, openB, pats1);
+
+    // their shadow is kept only where a down-right ribbon lies beneath
+    dropShadow(L1, L2);
+    ctx.drawImage(L1, 0, 0);
+  }
+
+  // ---------- loop ----------
+
+  function frame(now) {
+    const dt = Math.min(0.033, last ? (now - last) / 1000 : 1 / 60);
+    last = now;
+    const ca = (pointer.x + pointer.y) * SQ;
+    const cb = (pointer.y - pointer.x) * SQ;
+    let busy = false;
+    for (let sub = 0; sub < 2; sub++) {
+      const a = update(A, cb, ca, dt / 2);
+      const b = update(B, ca, cb, dt / 2);
+      busy = a || b;
+    }
+    render();
+    if (!busy) { running = false; last = 0; return; }
+    requestAnimationFrame(frame);
+  }
+
+  function wake() {
+    if (!running) { running = true; last = 0; requestAnimationFrame(frame); }
+  }
+  function move(ev) {
+    pointer.x = ev.clientX; pointer.y = ev.clientY; pointer.active = true; wake();
+  }
+  function leave() { pointer.active = false; wake(); }
+
+  window.addEventListener("pointermove", move, { passive: true });
+  window.addEventListener("pointerdown", move, { passive: true });
+  window.addEventListener("pointerup", (e) => { if (e.pointerType !== "mouse") leave(); });
+  window.addEventListener("pointercancel", leave);
+  document.documentElement.addEventListener("mouseleave", leave);
+  window.addEventListener("blur", leave);
+
+  let resizeTimer = 0;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { build(); render(); }, 80);
+  });
+
+  build();
+  render();
+})();
+</script>
+</body>
+</html>
