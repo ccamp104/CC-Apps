@@ -121,7 +121,7 @@
       inset: 0;
       width: 100%;
       height: 100%;
-      z-index: 4;
+      z-index: 5;
       pointer-events: none;
     }
 
@@ -392,10 +392,11 @@
     .spirit.blown .ears { animation: wobble 0.7s ease-out; }
     @keyframes wobble { 0% { transform: rotate(0); } 30% { transform: rotate(9deg); } 60% { transform: rotate(-5deg); } 100% { transform: rotate(0); } }
 
-    .root-spirit { bottom: 0; z-index: 3; }
+    .root-spirit { bottom: 0; z-index: 10; }
     .root-spirit.left  { left: -10%; }
     .root-spirit.right { right: -10%; }
-    .scene .spirit { --size: 40px; }
+    .spirit-layer { position: fixed; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+    .spirit-layer .spirit { --size: 40px; }
 
     /* Large branches framing the top corners */
     .branch {
@@ -409,7 +410,7 @@
     .branch-left  { left: -2%; }
     .branch-right { right: -2%; }
     .branch-right > svg { transform: scaleX(-1); }
-    .scene .perch { --size: 34px; transform: translate(-50%, -94%); }
+    .spirit-layer .perch { --size: 34px; transform: translate(-50%, -94%); }
 
     @media (max-width: 700px) {
       .app-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 165px)); }
@@ -417,8 +418,9 @@
       .hollow { width: 52%; }
       .app-card h2 { font-size: 0.95rem; }
       .spirit { --size: 28px; }
-      .scene .spirit { --size: 32px; }
-      .scene .perch { --size: 22px; }
+      .spirit-layer .spirit { --size: 32px; }
+      .spirit-layer .inner-ground { display: none; }  /* too crowded next to the app trees on narrow screens */
+      .spirit-layer .perch { --size: 22px; }
       .branch { width: 64vw; top: calc(env(safe-area-inset-top, 0px) + 6px); }
       .branch-left { left: -8%; }
       .branch-right { right: -8%; }
@@ -484,8 +486,6 @@
           <g class="foliage"><circle cx="150" cy="96" r="18" fill="#1f3d2a"/><circle cx="168" cy="108" r="14" fill="#27492f"/><circle cx="136" cy="110" r="12" fill="#2f5a36"/></g>
           <g class="foliage"><circle cx="400" cy="130" r="14" fill="#23452f"/><circle cx="414" cy="140" r="11" fill="#3b6b36"/></g>
         </svg>
-      <div class="spirit perch" data-variant="staff" style="left:70.8%; top:35.4%; --delay:-.4s"></div>
-      <div class="spirit perch" data-variant="dark" style="left:50%; top:28.4%; --delay:-1.7s"></div>
     </div>
     <div class="branch branch-right" data-sway="26">
         <svg viewBox="0 0 500 280" aria-hidden="true">
@@ -501,17 +501,27 @@
           <g class="foliage"><circle cx="150" cy="96" r="18" fill="#1f3d2a"/><circle cx="168" cy="108" r="14" fill="#27492f"/><circle cx="136" cy="110" r="12" fill="#2f5a36"/></g>
           <g class="foliage"><circle cx="400" cy="130" r="14" fill="#23452f"/><circle cx="414" cy="140" r="11" fill="#3b6b36"/></g>
         </svg>
-      <div class="spirit perch" style="left:29.2%; top:35.4%; --delay:-2.2s"></div>
-      <div class="spirit perch" data-variant="dark staff" style="left:50%; top:28.4%; --delay:-3.1s"></div>
     </div>
 
-    <div class="spirit" style="left:3%; bottom:2%; --delay:-1s"></div>
-    <div class="spirit" data-variant="dark" style="left:17%; bottom:3.5%; --size:30px; --delay:-2s"></div>
-    <div class="spirit" data-variant="staff" style="right:3%; bottom:3%; --delay:-2.6s"></div>
-    <div class="spirit" style="right:17%; bottom:2.5%; --size:30px; --delay:-.8s"></div>
   </div>
 
   <div class="sun-front" id="sunFront" aria-hidden="true"></div>
+
+  <!-- Spirits scattered around the page: in front of everything except the falling leaves -->
+  <div class="spirit-layer" aria-hidden="true">
+    <div class="branch branch-left" data-sway="26">
+      <div class="spirit perch" data-variant="staff" style="left:70.8%; top:35.4%; --delay:-.4s"></div>
+      <div class="spirit perch" data-variant="dark" style="left:50%; top:28.4%; --delay:-1.7s"></div>
+    </div>
+    <div class="branch branch-right" data-sway="26">
+      <div class="spirit perch" style="left:29.2%; top:35.4%; --delay:-2.2s"></div>
+      <div class="spirit perch" data-variant="dark staff" style="left:50%; top:28.4%; --delay:-3.1s"></div>
+    </div>
+    <div class="spirit" style="left:3%; bottom:2%; --delay:-1s"></div>
+    <div class="spirit inner-ground" data-variant="dark" style="left:17%; bottom:3.5%; --size:30px; --delay:-2s"></div>
+    <div class="spirit" data-variant="staff" style="right:3%; bottom:3%; --delay:-2.6s"></div>
+    <div class="spirit inner-ground" style="right:17%; bottom:2.5%; --size:30px; --delay:-.8s"></div>
+  </div>
   <canvas id="breeze" aria-hidden="true"></canvas>
 
   <!-- ===== Apps ===== -->
@@ -936,7 +946,7 @@
       }
     });
 
-    document.querySelectorAll('.scene .spirit').forEach(s => mountSpirit(s, s.dataset.color));
+    document.querySelectorAll('.spirit-layer .spirit').forEach(s => mountSpirit(s, s.dataset.color));
     /* ---------- One continuous trunk per grid column ---------- */
     function columnTrunkSVG(w, H, topLen, seed) {
       const r = rng(seed);
@@ -970,7 +980,7 @@
           let seg = `M${f(xAt(y))},${f(y)}`;
           for (let yy = y + 6; yy <= end; yy += 6) seg += ` L${f(xAt(yy))},${f(yy)}`;
           grain += `<path d="${seg}"/>`;
-          if (r() < 0.5) light += `<path d="${seg}" transform="translate(2 0)"/>`;
+          if (r() < 0.5) light += `<path d="${seg}" transform="translate(-2 0)"/>`;
           y = end + 14 + r() * 50;
         }
       }
@@ -989,7 +999,8 @@
       }
 
       // two branches high up, fading into the canopy
-      const b1 = topLen * 0.42, b2 = topLen * 0.62;
+      const b1 = topLen * (0.42 + (r() - 0.5) * 0.2);   // 32–52% of the way down to the first hollow
+      const b2 = topLen * (0.62 + (r() - 0.5) * 0.2);   // 52–72%
       const branches = `
         <path d="M${f(L(b2) + 4)},${f(b2)} C${f(L(b2) - w * .1)},${f(b2 - 10)} ${f(L(b2) - w * .2)},${f(b2 - 16)} ${f(L(b2) - w * .3)},${f(b2 - 18)}" stroke="#2a1c11" stroke-width="7" fill="none" stroke-linecap="round"/>
         <g class="foliage"><circle cx="${f(L(b2) - w * .3)}" cy="${f(b2 - 24)}" r="14" fill="#1f3d2a"/><circle cx="${f(L(b2) - w * .23)}" cy="${f(b2 - 30)}" r="11" fill="#27492f"/><circle cx="${f(L(b2) - w * .36)}" cy="${f(b2 - 14)}" r="9" fill="#1b3524"/></g>
