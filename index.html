@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#1d3a2a">
-  <title>The Quiet Grove · My Apps</title>
+  <title>[Single trunk test] The Quiet Grove · My Apps</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
@@ -162,6 +162,7 @@
 
     /* One tree per app. auto-fill means new apps just add more trees. */
     .app-grid {
+      position: relative;
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 200px));
       justify-content: center;
@@ -254,6 +255,11 @@
     .app-card.on-ground .root-spirit { bottom: calc(0px - var(--drop, 0px)); }
     .app-card.top-row:not(.on-ground) .tree-svg { height: calc(100% + var(--rise, 220px) + 30px); }
     .app-card.has-above .tree-svg { -webkit-mask-image: none; mask-image: none; }
+    /* One real trunk per grid column, drawn behind the apps */
+    .tree-svg { display: none !important; }
+    .col-trunks { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+    .col-trunk { position: absolute; overflow: visible; }
+
     /* Every active app has its own runes; empty hollows don't */
     .app-card.disabled .tree-runes { display: none; }
 
@@ -931,7 +937,119 @@
     });
 
     document.querySelectorAll('.scene .spirit').forEach(s => mountSpirit(s, s.dataset.color));
+    /* ---------- One continuous trunk per grid column ---------- */
+    function columnTrunkSVG(w, H, topLen, seed) {
+      const r = rng(seed);
+      const cx = w / 2, half = w * 0.27;
+      const flareH = Math.min(90, H * 0.2);
+      const ph1 = r() * 6, ph2 = r() * 6;
+      const wob = y => 2.2 * Math.sin(y / 110 + ph1) + 1.2 * Math.sin(y / 47 + ph2);
+      const hw = y => half * (0.93 + 0.07 * y / H);
+      const flare = y => { const t = Math.max(0, (y - (H - flareH)) / flareH); return t * t * (w * 0.5 - hw(y)); };
+      const L = y => cx - hw(y) - flare(y) + wob(y);
+      const R = y => cx + hw(y) + flare(y) + wob(y) * 0.7;
+      const f = n => n.toFixed(1);
+
+      // outline
+      let d = `M${f(L(0))},0`;
+      for (let y = 10; y <= H; y += 10) d += ` L${f(L(y))},${y}`;
+      d += ` L${f(L(H))},${H} L${f(R(H))},${H}`;
+      for (let y = Math.floor(H / 10) * 10; y >= 0; y -= 10) d += ` L${f(R(y))},${y}`;
+      d += 'Z';
+
+      // wavy bark grain, broken into lengths like real bark
+      let grain = '', light = '';
+      for (let k = 0; k < 6; k++) {
+        const fx = -0.78 + k * 0.31 + (r() - 0.5) * 0.08;
+        const amp = 2.5 + r() * 4, lam = 30 + r() * 40, ph = r() * 6;
+        const amp2 = 1 + r() * 2, lam2 = 11 + r() * 10;
+        const xAt = yy => cx + fx * hw(yy) + amp * Math.sin(yy / lam + ph) + amp2 * Math.sin(yy / lam2 + ph * 2) + wob(yy) + flare(yy) * fx;
+        let y = r() * 40;
+        while (y < H) {
+          const end = Math.min(H - 4, y + 60 + r() * 260);
+          let seg = `M${f(xAt(y))},${f(y)}`;
+          for (let yy = y + 6; yy <= end; yy += 6) seg += ` L${f(xAt(yy))},${f(yy)}`;
+          grain += `<path d="${seg}"/>`;
+          if (r() < 0.5) light += `<path d="${seg}" transform="translate(2 0)"/>`;
+          y = end + 14 + r() * 50;
+        }
+      }
+
+      // knots and moss
+      let knots = '', moss = '';
+      for (let y = topLen * 0.5 + r() * 120; y < H - flareH; y += 220 + r() * 160) {
+        const x = cx + (r() - 0.5) * hw(y) * 1.1 + wob(y);
+        const rx = 3 + r() * 2.5, ry = 6 + r() * 4;
+        knots += `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(rx + 3)}" ry="${f(ry + 4)}" fill="none" stroke="#1a110a" stroke-width="1.5" opacity=".6"/><ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(rx)}" ry="${f(ry)}" fill="#1c130c"/>`;
+      }
+      for (let y = topLen * 0.4 + r() * 80; y < H - 30; y += 110 + r() * 140) {
+        const left = r() < 0.5;
+        const x = left ? L(y) + 3 : R(y) - 3;
+        moss += `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(4 + r() * 3)}" ry="${f(12 + r() * 14)}" fill="${r() < 0.5 ? '#56803a' : '#6f9a4a'}" opacity=".75"/>`;
+      }
+
+      // two branches high up, fading into the canopy
+      const b1 = topLen * 0.42, b2 = topLen * 0.62;
+      const branches = `
+        <path d="M${f(L(b2) + 4)},${f(b2)} C${f(L(b2) - w * .1)},${f(b2 - 10)} ${f(L(b2) - w * .2)},${f(b2 - 16)} ${f(L(b2) - w * .3)},${f(b2 - 18)}" stroke="#2a1c11" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <g class="foliage"><circle cx="${f(L(b2) - w * .3)}" cy="${f(b2 - 24)}" r="14" fill="#1f3d2a"/><circle cx="${f(L(b2) - w * .23)}" cy="${f(b2 - 30)}" r="11" fill="#27492f"/><circle cx="${f(L(b2) - w * .36)}" cy="${f(b2 - 14)}" r="9" fill="#1b3524"/></g>
+        <path d="M${f(R(b1) - 4)},${f(b1)} C${f(R(b1) + w * .1)},${f(b1 - 10)} ${f(R(b1) + w * .18)},${f(b1 - 14)} ${f(R(b1) + w * .27)},${f(b1 - 16)}" stroke="#2a1c11" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <g class="foliage"><circle cx="${f(R(b1) + w * .27)}" cy="${f(b1 - 22)}" r="13" fill="#23452f"/><circle cx="${f(R(b1) + w * .2)}" cy="${f(b1 - 26)}" r="10" fill="#2f5a36"/><circle cx="${f(R(b1) + w * .32)}" cy="${f(b1 - 10)}" r="8" fill="#1d3b2a"/></g>`;
+
+      const yF = H - flareH;
+      const roots = `<path d="M${f(L(yF) + 6)},${f(yF)} C${f(L(yF))},${f(yF + flareH * .5)} ${f(w * .12)},${f(H - 8)} 3,${H - 2} M${f(R(yF) - 6)},${f(yF)} C${f(R(yF))},${f(yF + flareH * .5)} ${f(w * .88)},${f(H - 8)} ${f(w - 3)},${H - 2}"/>`;
+
+      const gid = 'colbark' + seed;
+      return `<svg class="col-trunk-svg" width="${w}" height="${H}" viewBox="0 0 ${w} ${H}" style="overflow:visible;display:block">
+        <defs><linearGradient id="${gid}" gradientUnits="userSpaceOnUse" x1="${f(cx - half)}" x2="${f(cx + half)}" y1="0" y2="0">
+          <stop offset="0" stop-color="#1a120c"/><stop offset=".4" stop-color="#2e2016"/><stop offset=".74" stop-color="#4a3522"/><stop offset=".9" stop-color="#34251a"/><stop offset="1" stop-color="#1a120c"/>
+        </linearGradient></defs>
+        ${branches}
+        <path d="${d}" fill="url(#${gid})"/>
+        <g stroke="#120c07" stroke-width="2.4" fill="none" opacity=".5" stroke-linecap="round">${grain}${roots}</g>
+        <g stroke="#6a4c30" stroke-width="1" fill="none" opacity=".35" stroke-linecap="round">${light}</g>
+        ${knots}${moss}
+      </svg>`;
+    }
+
+    function buildColumnTrunks() {
+      const grid = document.querySelector('.app-grid');
+      let wrap = grid.querySelector('.col-trunks');
+      if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.className = 'col-trunks';
+        wrap.setAttribute('aria-hidden', 'true');
+        grid.prepend(wrap);
+      }
+      const cards = [...grid.querySelectorAll('.app-card')];
+      if (!cards.length) return;
+      const gridTopPage = grid.getBoundingClientRect().top + scrollY;
+      const bottom = Math.max(...cards.map(c => c.offsetTop + c.offsetHeight));
+      const cols = new Map();
+      cards.forEach(c => {
+        const key = Math.round(c.offsetLeft);
+        if (!cols.has(key)) cols.set(key, []);
+        cols.get(key).push(c);
+      });
+      let html = '', ci = 0;
+      cols.forEach((list, left) => {
+        list.sort((a, b) => a.offsetTop - b.offsetTop);
+        const first = list[0];
+        const w = first.offsetWidth;
+        const top = -gridTopPage - 20;           // reach up past the top of the page
+        const H = Math.round(bottom - top + 4);
+        const topLen = first.offsetTop - top;
+        const mask = `linear-gradient(to bottom, transparent 0px, rgba(0,0,0,.6) ${Math.round(topLen * .2)}px, #000 ${Math.round(topLen * .55)}px)`;
+        html += `<div class="col-trunk" style="left:${left}px; top:${Math.round(top)}px; width:${w}px; height:${H}px; -webkit-mask-image:${mask}; mask-image:${mask}">${columnTrunkSVG(w, H, topLen, 101 + ci * 17)}</div>`;
+        ci++;
+      });
+      wrap.innerHTML = html;
+    }
+
     markRows();
+    buildColumnTrunks();
+    addEventListener('resize', buildColumnTrunks);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(buildColumnTrunks);
     addEventListener('resize', markRows);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(markRows);
     const spirits = [...document.querySelectorAll('.spirit')];
@@ -966,13 +1084,14 @@
     document.documentElement.addEventListener('mouseleave', () => { lastX = null; pointerActive = false; });
 
     /* ---------- Rustling + spirit reactions ---------- */
-    const foliage = [...document.querySelectorAll('.foliage')];
+    let foliage = [...document.querySelectorAll('.foliage')];
     const sunFront = document.getElementById('sunFront');
 
     function react(now) {
       const speed = Math.hypot(pvx, pvy);
 
       if (speed > 3 && !reduceMotion) {
+        foliage = document.querySelectorAll('.foliage');
         for (const el of foliage) {
           if (el._t && now - el._t < 900) continue;
           const b = el.getBoundingClientRect();
