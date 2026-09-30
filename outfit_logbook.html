@@ -685,20 +685,22 @@
         const val = outfit.slots ? outfit.slots[key] : '';
         const isFilled = val && val.trim().length > 0;
 
+        if (!isFilled) return '';
+
         return `
-          <div class="p-3 rounded-lg border ${isFilled ? 'border-amber-500/30 bg-slate-900/90 shadow-sm' : 'border-slate-800/50 bg-slate-950/40 opacity-50'} flex items-center gap-3 transition-all">
+          <div class="p-3 rounded-lg border border-amber-500/30 bg-slate-900/90 shadow-sm flex items-center gap-3 transition-all">
             <div class="w-8 h-8 rounded-md ${config.weapon ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'} flex items-center justify-center shrink-0 border">
               <i data-lucide="${config.icon}" class="w-4 h-4"></i>
             </div>
             <div class="min-w-0 flex-1">
               <p class="text-[10px] font-bold ${config.weapon ? 'text-cyan-400' : 'text-amber-400'} uppercase tracking-wider">${config.label}</p>
-              <p class="text-xs sm:text-sm font-semibold truncate ${isFilled ? 'text-slate-100' : 'text-slate-600 italic'}">
-                ${isFilled ? escapeHTML(val) : '— Unassigned —'}
+              <p class="text-xs sm:text-sm font-semibold truncate text-slate-100">
+                ${escapeHTML(val)}
               </p>
             </div>
           </div>
         `;
-      }).join('');
+      }).filter(Boolean).join('');
 
       bookContainer.innerHTML = `
         <div class="w-full bg-slate-900 border-2 border-amber-500/40 rounded-2xl p-6 sm:p-8 shadow-book-3d page-card relative overflow-hidden">
@@ -735,7 +737,7 @@
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-            ${slotsHTML}
+            ${slotsHTML || '<p class="text-xs text-slate-500 italic col-span-2 text-center py-4">No equipment assigned to this outfit.</p>'}
           </div>
 
           ${outfit.notes ? `
