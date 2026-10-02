@@ -5,14 +5,14 @@
   // Settings. Tweak these to change the feel of the piece.
   // ---------------------------------------------------------------------------
   const CONFIG = {
-    maxBlobs: 7,          // hard limit (must match MAX_BLOBS in the shader)
+    maxBlobs: 6,          // hard limit (must match MAX_BLOBS in the shader)
     minBlobs: 1,
     grainPx: 2,           // size of one grain in CSS pixels (higher = coarser)
-    grainFps: 23,         // how often the grain pattern re-rolls
-    grainAmount: 0.08,    // strength of the noise grain
-    levels: 5,           // colour levels per channel after dithering (lower = more lo-fi)
+    grainFps: 7,         // how often the grain pattern re-rolls
+    grainAmount: 0.3,    // strength of the noise grain
+    levels: 15,           // colour levels per channel after dithering (lower = more lo-fi)
     idleDelay: 1000,      // ms without movement before the gradient drifts on its own
-    followEase: 2.4,      // how quickly the main blob catches the cursor
+    followEase: 1,      // how quickly the main blob catches the cursor
     idleEase: 0.9,        // how quickly it settles into the drift path
     trailEase: 1.9,       // how loosely the other blobs trail behind
   };
