@@ -30,7 +30,7 @@
     { key: 'grainPx',     bank: 'Grain',  name: 'Size',     unit: 'px',  label: 'Grain size',            min: 1,   max: 30,     step: 1,   int: true },
     { key: 'grainAmount', bank: 'Grain',  name: 'Strength', unit: '',    label: 'Grain strength',        min: 0,   max: 0.8,   step: 0.01 },
     { key: 'grainFps',    bank: 'Grain',  name: 'Flicker',  unit: 'fps', label: 'Grain flicker',         min: 0,   max: 60,    step: 1,   int: true },
-    { key: 'levels',      bank: 'Grain',  name: 'Levels',   unit: '',    label: 'Colour levels',         min: 2,   max: 32,    step: 1,   int: true },
+    { key: 'levels',      bank: 'Grain',  name: 'Levels',   unit: '',    label: 'Colour levels',         min: 2,   max: 12,    step: 1,   int: true },
     { key: 'idleDelay',   bank: 'Motion', name: 'Delay',    unit: 'ms',  label: 'Drift after idle',      min: 500, max: 10000, step: 100, int: true },
     { key: 'followEase',  bank: 'Motion', name: 'Follow',   unit: '',    label: 'Cursor follow speed',   min: 0.2, max: 10,    step: 0.1 },
     { key: 'idleEase',    bank: 'Motion', name: 'Settle',   unit: '',    label: 'Drift settle speed',    min: 0.1, max: 5,     step: 0.1 },
