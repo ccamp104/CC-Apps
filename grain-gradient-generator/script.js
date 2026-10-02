@@ -12,9 +12,9 @@
     grainAmount: 0.08,    // strength of the noise grain
     levels: 5,           // colour levels per channel after dithering (lower = more lo-fi)
     idleDelay: 1000,      // ms without movement before the gradient drifts on its own
-    followEase: 3.2,      // how quickly the main blob catches the cursor
+    followEase: 2.4,      // how quickly the main blob catches the cursor
     idleEase: 0.9,        // how quickly it settles into the drift path
-    trailEase: 1.6,       // how loosely the other blobs trail behind
+    trailEase: 1.9,       // how loosely the other blobs trail behind
   };
 
   const DEFAULT_COLOURS = ['#f23c8a', '#e89c2d', '#1c3c6a'];
