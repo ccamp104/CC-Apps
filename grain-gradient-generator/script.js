@@ -5,23 +5,42 @@
   // Settings. Tweak these to change the feel of the piece.
   // ---------------------------------------------------------------------------
   const CONFIG = {
-    maxBlobs: 6,          // hard limit (must match MAX_BLOBS in the shader)
-    minBlobs: 1,
-    grainPx: 13,           // size of one grain in CSS pixels (higher = coarser)
-    grainFps: 0,         // how often the grain pattern re-rolls
-    grainAmount: 0.15,    // strength of the noise grain
-    levels: 4,           // colour levels per channel after dithering (lower = more lo-fi)
-    idleDelay: 2200,      // ms without movement before the gradient drifts on its own
-    followEase: 2.2,      // how quickly the main blob catches the cursor
-    idleEase: 2.9,        // how quickly it settles into the drift path
-    trailEase: 2.9,       // how loosely the other blobs trail behind
+    maxBlobs: 7,          // hard limit (must match MAX_BLOBS in the shader)
+    minBlobs: 2,
+    grainPx: 3,           // size of one grain in CSS pixels (higher = coarser)
+    grainFps: 12,         // how often the grain pattern re-rolls
+    grainAmount: 0.11,    // strength of the noise grain
+    levels: 10,           // colour levels per channel after dithering (lower = more lo-fi)
+    idleDelay: 3000,      // ms without movement before the gradient drifts on its own
+    followEase: 3.2,      // how quickly the main blob catches the cursor
+    idleEase: 0.9,        // how quickly it settles into the drift path
+    trailEase: 1.6,       // how loosely the other blobs trail behind
   };
+
+  // Ranges for the settings dialog. Values typed outside a range snap to the
+  // nearest limit; whole-number settings are rounded.
+  const SETTINGS = [
+    { key: 'grainPx',     label: 'Grain size (px)',            min: 1,   max: 30,     step: 1,    int: true },
+    { key: 'grainAmount', label: 'Grain strength',             min: 0,   max: 0.8,   step: 0.01 },
+    { key: 'grainFps',    label: 'Grain flicker (per second)', min: 0,   max: 60,    step: 1,    int: true },
+    { key: 'levels',      label: 'Colour levels',              min: 2,   max: 32,    step: 1,    int: true },
+    { key: 'idleDelay',   label: 'Drift after idle (ms)',      min: 500, max: 10000, step: 100,  int: true },
+    { key: 'followEase',  label: 'Cursor follow speed',        min: 0.2, max: 10,    step: 0.1 },
+    { key: 'idleEase',    label: 'Drift settle speed',         min: 0.1, max: 5,     step: 0.1 },
+    { key: 'trailEase',   label: 'Trail tightness',            min: 0.1, max: 6,     step: 0.1 },
+  ];
+  const CONFIG_DEFAULTS = { ...CONFIG };
 
   const DEFAULT_COLOURS = ['#f23c8a', '#e89c2d', '#1c3c6a'];
   const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
   const canvas = document.getElementById('field');
   const list = document.getElementById('swatches');
+  const rail = document.getElementById('rail');
+  const addBtn = document.getElementById('add-blob');
+  const settingsBtn = document.getElementById('open-settings');
+  const dialog = document.getElementById('settings');
+  const settingsBody = document.getElementById('settings-body');
   const hint = document.getElementById('hint');
   const fallback = document.getElementById('fallback');
   const announcer = document.getElementById('announcer');
@@ -145,12 +164,19 @@
       <rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor" stroke="none"/>
     </svg>`;
 
+  const X_ICON = `
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+         stroke-width="3" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>`;
+
   function buildSwatch(i) {
     const li = document.createElement('li');
     li.className = 'swatch';
     li.innerHTML = `
       <button class="lock" type="button" aria-pressed="false">${LOCK_ICON}</button>
-      <button class="chip" type="button"><span class="hex"></span></button>`;
+      <div class="chip-wrap">
+        <button class="chip" type="button"><span class="hex"></span></button>
+        <button class="remove" type="button">${X_ICON}</button>
+      </div>`;
 
     li.querySelector('.lock').addEventListener('click', () => {
       const blob = state.blobs[i];
@@ -160,14 +186,24 @@
     });
 
     li.querySelector('.chip').addEventListener('click', () => copyHex(i, li));
+
+    li.querySelector('.remove').addEventListener('click', () => {
+      const hex = state.blobs[i].hex;
+      if (!removeBlob(i)) return;
+      announce(`Removed ${hex}`);
+      const next = list.children[Math.min(i, list.children.length - 1)];
+      next.querySelector('.chip').focus();
+    });
     return li;
   }
 
   function syncSwatches() {
     if (list.children.length !== state.blobs.length) {
       list.replaceChildren(...state.blobs.map((_, i) => buildSwatch(i)));
-      list.style.setProperty('--count', state.blobs.length);
+      rail.style.setProperty('--count', state.blobs.length + 1);
     }
+    const canRemove = state.blobs.length > CONFIG.minBlobs;
+    addBtn.hidden = state.blobs.length >= CONFIG.maxBlobs;
     state.blobs.forEach((blob, i) => {
       const li = list.children[i];
       const chip = li.querySelector('.chip');
@@ -179,6 +215,9 @@
       chip.setAttribute('aria-label', `Copy ${blob.hex}`);
       lock.setAttribute('aria-pressed', String(blob.locked));
       lock.setAttribute('aria-label', `${blob.locked ? 'Unlock' : 'Lock'} ${blob.hex}`);
+      const remove = li.querySelector('.remove');
+      remove.hidden = !canRemove;
+      remove.setAttribute('aria-label', `Remove ${blob.hex}`);
       li.classList.toggle('is-locked', blob.locked);
     });
   }
@@ -219,6 +258,97 @@
 
   syncSwatches();
 
+  addBtn.addEventListener('click', () => {
+    if (!addBlob()) return;
+    const hex = state.blobs[state.blobs.length - 1].hex;
+    announce(`Added ${hex}`);
+    if (addBtn.hidden) list.lastElementChild.querySelector('.chip').focus();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Settings dialog
+  // ---------------------------------------------------------------------------
+  const decimals = (n) => (String(n).split('.')[1] || '').length;
+
+  function clampSetting(def, raw) {
+    let v = Number(raw);
+    if (!Number.isFinite(v)) return CONFIG[def.key];
+    v = Math.min(def.max, Math.max(def.min, v));
+    return def.int ? Math.round(v) : Math.round(v * 1000) / 1000;
+  }
+
+  const formatSetting = (def, v) =>
+    def.int ? String(v) : String(Number(v.toFixed(Math.max(3, decimals(def.step)))));
+
+  // Keep only digits and a single decimal point (none at all for whole numbers).
+  function sanitise(text, allowDot) {
+    let out = text.replace(allowDot ? /[^0-9.]/g : /[^0-9]/g, '');
+    const dot = out.indexOf('.');
+    if (dot !== -1) out = out.slice(0, dot + 1) + out.slice(dot + 1).replace(/\./g, '');
+    return out;
+  }
+
+  const controls = {};
+  let resizeCanvas = () => {}; // set once WebGL is ready
+
+  function applySetting(def, value) {
+    CONFIG[def.key] = value;
+    const c = controls[def.key];
+    c.range.value = value;
+    c.text.value = formatSetting(def, value);
+    if (def.key === 'grainPx') resizeCanvas();
+  }
+
+  SETTINGS.forEach((def) => {
+    const id = `set-${def.key}`;
+    const row = document.createElement('div');
+    row.className = 'setting';
+    row.innerHTML = `
+      <label for="${id}">${def.label}</label>
+      <div class="setting-inputs">
+        <input type="range" id="${id}" min="${def.min}" max="${def.max}" step="${def.step}">
+        <input type="text" inputmode="${def.int ? 'numeric' : 'decimal'}" autocomplete="off"
+               spellcheck="false" aria-label="${def.label} value (${def.min} to ${def.max})">
+      </div>`;
+    const range = row.querySelector('input[type="range"]');
+    const text = row.querySelector('input[type="text"]');
+    controls[def.key] = { range, text };
+
+    range.addEventListener('input', () => applySetting(def, clampSetting(def, range.value)));
+
+    text.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); text.blur(); return; }
+      const allowed = def.int ? /^[0-9]$/ : /^[0-9.]$/;
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !allowed.test(e.key)) e.preventDefault();
+    });
+
+    text.addEventListener('input', () => {
+      const clean = sanitise(text.value, !def.int);
+      if (clean !== text.value) {
+        const pos = Math.max(0, text.selectionStart - (text.value.length - clean.length));
+        text.value = clean;
+        text.setSelectionRange(pos, pos);
+      }
+    });
+
+    text.addEventListener('change', () => {
+      const v = text.value.trim();
+      applySetting(def, v === '' || v === '.' ? CONFIG[def.key] : clampSetting(def, v));
+    });
+
+    settingsBody.appendChild(row);
+    applySetting(def, CONFIG[def.key]);
+  });
+
+  settingsBtn.addEventListener('click', () => dialog.showModal());
+  document.getElementById('close-settings').addEventListener('click', () => dialog.close());
+  document.getElementById('reset-settings').addEventListener('click', () => {
+    SETTINGS.forEach((def) => applySetting(def, CONFIG_DEFAULTS[def.key]));
+    announce('Settings reset to defaults');
+  });
+  // Clicking the empty area around the dialog closes it.
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+
   // ---------------------------------------------------------------------------
   // Input
   // ---------------------------------------------------------------------------
@@ -253,7 +383,7 @@
 
   // Keyboard: Space or Enter anywhere outside the buttons also randomises.
   document.addEventListener('keydown', (e) => {
-    if ((e.key === ' ' || e.key === 'Enter') && !e.target.closest('button')) {
+    if ((e.key === ' ' || e.key === 'Enter') && !e.target.closest('button, input, dialog')) {
       e.preventDefault();
       randomise();
     }
@@ -422,6 +552,7 @@
     }
   }
   window.addEventListener('resize', resize);
+  resizeCanvas = resize;
   resize();
 
   // ---------------------------------------------------------------------------
@@ -457,8 +588,9 @@
 
     state.blobs.forEach((b, i) => {
       if (i === 0) {
-        b.x = state.anchor.x;
-        b.y = state.anchor.y;
+        const pk = ease(12, dt);
+        b.x += (state.anchor.x - b.x) * pk;
+        b.y += (state.anchor.y - b.y) * pk;
       } else {
         b.theta += dt * motion * b.speed * (idle ? 1.6 : 1) * Math.PI * 2 * 0.35;
         const r = b.orbit * (1 + 0.28 * Math.sin(s * 0.31 + b.phase));
@@ -474,7 +606,9 @@
       wArr[i] = i === 0 ? 1.5 : 1;
     });
 
-    const grainFrame = reducedMotion ? 0 : Math.floor((now / 1000) * CONFIG.grainFps) % 97;
+    const grainFrame = reducedMotion || CONFIG.grainFps <= 0
+      ? 0
+      : Math.floor((now / 1000) * CONFIG.grainFps) % 97;
 
     gl.uniform2f(u.uRes, canvas.width, canvas.height);
     gl.uniform1f(u.uAspect, aspect);
