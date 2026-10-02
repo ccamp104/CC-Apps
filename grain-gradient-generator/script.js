@@ -8,7 +8,7 @@
     maxBlobs: 7,          // hard limit (must match MAX_BLOBS in the shader)
     minBlobs: 2,
     grainPx: 3,           // size of one grain in CSS pixels (higher = coarser)
-    grainFps: 12,         // how often the grain pattern re-rolls
+    grainFps: 0,         // how often the grain pattern re-rolls
     grainAmount: 0.11,    // strength of the noise grain
     levels: 10,           // colour levels per channel after dithering (lower = more lo-fi)
     idleDelay: 3000,      // ms without movement before the gradient drifts on its own
@@ -19,15 +19,19 @@
 
   // Ranges for the settings dialog. Values typed outside a range snap to the
   // nearest limit; whole-number settings are rounded.
+  // Settings shown in the panel. Each one becomes a fader channel in its bank.
+  // To add a control later, add a CONFIG default and a line here (new bank
+  // names create new banks). Values typed outside a range snap to the nearest
+  // limit; whole-number settings are rounded.
   const SETTINGS = [
-    { key: 'grainPx',     label: 'Grain size (px)',            min: 1,   max: 30,     step: 1,    int: true },
-    { key: 'grainAmount', label: 'Grain strength',             min: 0,   max: 0.8,   step: 0.01 },
-    { key: 'grainFps',    label: 'Grain flicker (per second)', min: 0,   max: 60,    step: 1,    int: true },
-    { key: 'levels',      label: 'Colour levels',              min: 2,   max: 32,    step: 1,    int: true },
-    { key: 'idleDelay',   label: 'Drift after idle (ms)',      min: 500, max: 10000, step: 100,  int: true },
-    { key: 'followEase',  label: 'Cursor follow speed',        min: 0.2, max: 10,    step: 0.1 },
-    { key: 'idleEase',    label: 'Drift settle speed',         min: 0.1, max: 5,     step: 0.1 },
-    { key: 'trailEase',   label: 'Trail tightness',            min: 0.1, max: 6,     step: 0.1 },
+    { key: 'grainPx',     bank: 'Grain',  name: 'Size',     unit: 'px',  label: 'Grain size',            min: 1,   max: 30,     step: 1,   int: true },
+    { key: 'grainAmount', bank: 'Grain',  name: 'Strength', unit: '',    label: 'Grain strength',        min: 0,   max: 0.8,   step: 0.01 },
+    { key: 'grainFps',    bank: 'Grain',  name: 'Flicker',  unit: 'fps', label: 'Grain flicker',         min: 0,   max: 60,    step: 1,   int: true },
+    { key: 'levels',      bank: 'Grain',  name: 'Levels',   unit: '',    label: 'Colour levels',         min: 2,   max: 32,    step: 1,   int: true },
+    { key: 'idleDelay',   bank: 'Motion', name: 'Delay',    unit: 'ms',  label: 'Drift after idle',      min: 500, max: 10000, step: 100, int: true },
+    { key: 'followEase',  bank: 'Motion', name: 'Follow',   unit: '',    label: 'Cursor follow speed',   min: 0.2, max: 10,    step: 0.1 },
+    { key: 'idleEase',    bank: 'Motion', name: 'Settle',   unit: '',    label: 'Drift settle speed',    min: 0.1, max: 5,     step: 0.1 },
+    { key: 'trailEase',   bank: 'Motion', name: 'Trail',    unit: '',    label: 'Trail tightness',       min: 0.2, max: 6,     step: 0.1 },
   ];
   const CONFIG_DEFAULTS = { ...CONFIG };
 
@@ -197,6 +201,8 @@
     return li;
   }
 
+  let onColoursChanged = () => {}; // set up by the settings panel
+
   function syncSwatches() {
     if (list.children.length !== state.blobs.length) {
       list.replaceChildren(...state.blobs.map((_, i) => buildSwatch(i)));
@@ -220,6 +226,7 @@
       remove.setAttribute('aria-label', `Remove ${blob.hex}`);
       li.classList.toggle('is-locked', blob.locked);
     });
+    onColoursChanged();
   }
 
   async function copyHex(i, li) {
@@ -296,23 +303,29 @@
     const c = controls[def.key];
     c.range.value = value;
     c.text.value = formatSetting(def, value);
+    c.strip.style.setProperty('--pct', `${((value - def.min) / (def.max - def.min)) * 100}%`);
     if (def.key === 'grainPx') resizeCanvas();
   }
 
-  SETTINGS.forEach((def) => {
+  function buildChannel(def) {
     const id = `set-${def.key}`;
-    const row = document.createElement('div');
-    row.className = 'setting';
-    row.innerHTML = `
-      <label for="${id}">${def.label}</label>
-      <div class="setting-inputs">
-        <input type="range" id="${id}" min="${def.min}" max="${def.max}" step="${def.step}">
-        <input type="text" inputmode="${def.int ? 'numeric' : 'decimal'}" autocomplete="off"
-               spellcheck="false" aria-label="${def.label} value (${def.min} to ${def.max})">
-      </div>`;
-    const range = row.querySelector('input[type="range"]');
-    const text = row.querySelector('input[type="text"]');
-    controls[def.key] = { range, text };
+    const strip = document.createElement('div');
+    strip.className = 'channel';
+    strip.innerHTML = `
+      <input class="readout" type="text" inputmode="${def.int ? 'numeric' : 'decimal'}"
+             autocomplete="off" spellcheck="false"
+             aria-label="${def.label} value, ${def.min} to ${def.max}">
+      <span class="unit" aria-hidden="true">${def.unit || '&nbsp;'}</span>
+      <div class="fader-wrap">
+        <span class="slot" aria-hidden="true"><span class="fill"></span></span>
+        <input class="fader" type="range" id="${id}" min="${def.min}" max="${def.max}"
+               step="${def.step}" aria-label="${def.label}">
+      </div>
+      <label class="channel-name" for="${id}">${def.name}</label>`;
+
+    const range = strip.querySelector('.fader');
+    const text = strip.querySelector('.readout');
+    controls[def.key] = { range, text, strip };
 
     range.addEventListener('input', () => applySetting(def, clampSetting(def, range.value)));
 
@@ -331,23 +344,160 @@
       }
     });
 
+    text.addEventListener('focus', () => text.select());
+
     text.addEventListener('change', () => {
       const v = text.value.trim();
       applySetting(def, v === '' || v === '.' ? CONFIG[def.key] : clampSetting(def, v));
     });
 
-    settingsBody.appendChild(row);
+    return strip;
+  }
+
+  // Group settings into banks in the order they first appear.
+  const banks = new Map();
+  SETTINGS.forEach((def) => {
+    if (!banks.has(def.bank)) {
+      const bank = document.createElement('section');
+      bank.className = 'bank';
+      const headingId = `bank-${def.bank.toLowerCase().replace(/\W+/g, '-')}`;
+      bank.setAttribute('aria-labelledby', headingId);
+      bank.innerHTML = `<h3 class="bank-name" id="${headingId}">${def.bank}</h3><div class="channels"></div>`;
+      settingsBody.appendChild(bank);
+      banks.set(def.bank, bank.querySelector('.channels'));
+    }
+    banks.get(def.bank).appendChild(buildChannel(def));
     applySetting(def, CONFIG[def.key]);
   });
 
-  settingsBtn.addEventListener('click', () => dialog.showModal());
-  document.getElementById('close-settings').addEventListener('click', () => dialog.close());
+  // ----- Tint the panel from the live colours -----
+  function oklabToHex([L, a, b]) {
+    const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+    const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+    const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+    const lin = [
+      4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+      -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+      -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+    ];
+    if (lin.some((c) => c < -0.0005 || c > 1.0005)) return null;
+    return '#' + lin.map((c) => {
+      c = Math.min(1, Math.max(0, c));
+      const v = c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055;
+      return Math.round(v * 255).toString(16).padStart(2, '0');
+    }).join('');
+  }
+
+  // Push a colour to a fixed light or dark lightness so text on it always
+  // reads, keeping as much of its hue and colourfulness as fits in sRGB.
+  function chassisFrom(hex) {
+    const [L, a, b] = hexToOklab(hex);
+    const dark = L < 0.6;
+    const targetL = dark ? 0.3 : 0.86;
+    const h = Math.atan2(b, a);
+    let C = Math.min(Math.hypot(a, b), dark ? 0.16 : 0.13);
+    let out = null;
+    while (!(out = oklabToHex([targetL, C * Math.cos(h), C * Math.sin(h)])) && C > 0) C -= 0.005;
+    return { panel: out || (dark ? '#2a2630' : '#e9e4ee'), dark };
+  }
+
+  function themePanel() {
+    const { panel, dark } = chassisFrom(state.blobs[0].hex);
+    dialog.style.setProperty('--panel', panel);
+    dialog.style.setProperty('--panel-ink', dark ? '#fbf7ff' : '#141019');
+    // The chassis takes the cursor colour, so the faders cycle through the rest.
+    const capColours = state.blobs.slice(1);
+    let i = 0;
+    for (const { strip } of Object.values(controls)) {
+      const hex = capColours[i % capColours.length].hex;
+      strip.style.setProperty('--cap', hex);
+      strip.style.setProperty('--cap-ink', inkFor(hex));
+      i++;
+    }
+  }
+  onColoursChanged = themePanel;
+  themePanel();
+
+  // ----- Open, close, drag -----
+  const MARGIN = 12;
+  let placed = false;
+  const panelPos = { x: 0, y: 0 };
+
+  function placePanel(x, y) {
+    const w = dialog.offsetWidth;
+    const h = dialog.offsetHeight;
+    panelPos.x = Math.min(Math.max(MARGIN, x), Math.max(MARGIN, window.innerWidth - w - MARGIN));
+    panelPos.y = Math.min(Math.max(MARGIN, y), Math.max(MARGIN, window.innerHeight - h - MARGIN));
+    dialog.style.left = `${panelPos.x}px`;
+    dialog.style.top = `${panelPos.y}px`;
+  }
+
+  // Default spot: bottom right, tucked beside the swatch column if there's room.
+  function dockPanel() {
+    const w = dialog.offsetWidth;
+    const railLeft = rail.getBoundingClientRect().left;
+    const besideRail = railLeft - w - 16;
+    const x = besideRail >= MARGIN ? besideRail : window.innerWidth - w - MARGIN;
+    placePanel(x, window.innerHeight - dialog.offsetHeight - 24);
+  }
+
+  function openPanel() {
+    dialog.show(); // non-modal: the gradient stays clickable behind it
+    if (!placed) { dockPanel(); placed = true; } else placePanel(panelPos.x, panelPos.y);
+    settingsBtn.setAttribute('aria-expanded', 'true');
+    dialog.querySelector('.fader').focus({ preventScroll: true });
+  }
+
+  function closePanel() {
+    if (!dialog.open) return;
+    const hadFocus = dialog.contains(document.activeElement);
+    dialog.close();
+    settingsBtn.setAttribute('aria-expanded', 'false');
+    if (hadFocus) settingsBtn.focus();
+  }
+
+  settingsBtn.addEventListener('click', () => (dialog.open ? closePanel() : openPanel()));
+  document.getElementById('close-settings').addEventListener('click', closePanel);
   document.getElementById('reset-settings').addEventListener('click', () => {
     SETTINGS.forEach((def) => applySetting(def, CONFIG_DEFAULTS[def.key]));
     announce('Settings reset to defaults');
   });
-  // Clicking the empty area around the dialog closes it.
-  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && dialog.open) closePanel();
+  });
+  window.addEventListener('resize', () => { if (dialog.open) placePanel(panelPos.x, panelPos.y); });
+
+  const grip = document.getElementById('settings-grip');
+  let drag = null;
+  grip.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button') || e.button !== 0) return;
+    drag = { id: e.pointerId, dx: e.clientX - panelPos.x, dy: e.clientY - panelPos.y };
+    grip.setPointerCapture(e.pointerId);
+    dialog.classList.add('is-dragging');
+    e.preventDefault();
+  });
+  grip.addEventListener('pointermove', (e) => {
+    if (!drag || drag.id !== e.pointerId) return;
+    placePanel(e.clientX - drag.dx, e.clientY - drag.dy);
+  });
+  const endDrag = (e) => {
+    if (!drag || drag.id !== e.pointerId) return;
+    drag = null;
+    dialog.classList.remove('is-dragging');
+  };
+  grip.addEventListener('pointerup', endDrag);
+  grip.addEventListener('pointercancel', endDrag);
+
+  // Keyboard users can nudge the panel with the arrow keys while the grip has focus.
+  grip.tabIndex = 0;
+  grip.setAttribute('aria-label', 'Move settings panel with arrow keys');
+  grip.addEventListener('keydown', (e) => {
+    const step = e.shiftKey ? 40 : 10;
+    const moves = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
+    if (!moves[e.key] || e.target !== grip) return;
+    e.preventDefault();
+    placePanel(panelPos.x + moves[e.key][0], panelPos.y + moves[e.key][1]);
+  });
 
   // ---------------------------------------------------------------------------
   // Input
@@ -383,7 +533,7 @@
 
   // Keyboard: Space or Enter anywhere outside the buttons also randomises.
   document.addEventListener('keydown', (e) => {
-    if ((e.key === ' ' || e.key === 'Enter') && !e.target.closest('button, input, dialog')) {
+    if ((e.key === ' ' || e.key === 'Enter') && !e.target.closest('button, input, dialog, [tabindex]')) {
       e.preventDefault();
       randomise();
     }
