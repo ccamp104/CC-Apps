@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Grain Gradient Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sofia+Sans+Extra+Condensed:wght@500;650&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="field" role="img"
+          aria-label="Animated grainy colour gradient. Click or tap anywhere for new colours."></canvas>
+
+  <ul class="swatches" id="swatches" aria-label="Current colours"></ul>
+
+  <p class="hint" id="hint">Click anywhere for new colours</p>
+
+  <p class="fallback" id="fallback" hidden>
+    This browser can't draw the gradient because WebGL is turned off or unsupported.
+    Try a recent version of Chrome, Firefox or Safari.
+  </p>
+
+  <div class="sr-only" id="announcer" aria-live="polite"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
