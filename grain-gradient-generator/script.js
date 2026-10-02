@@ -7,11 +7,11 @@
   const CONFIG = {
     maxBlobs: 6,          // hard limit (must match MAX_BLOBS in the shader)
     minBlobs: 1,
-    grainPx: 9,           // size of one grain in CSS pixels (higher = coarser)
+    grainPx: 13,           // size of one grain in CSS pixels (higher = coarser)
     grainFps: 0,         // how often the grain pattern re-rolls
     grainAmount: 0.15,    // strength of the noise grain
-    levels: 25,           // colour levels per channel after dithering (lower = more lo-fi)
-    idleDelay: 1600,      // ms without movement before the gradient drifts on its own
+    levels: 4,           // colour levels per channel after dithering (lower = more lo-fi)
+    idleDelay: 2200,      // ms without movement before the gradient drifts on its own
     followEase: 2.2,      // how quickly the main blob catches the cursor
     idleEase: 2.9,        // how quickly it settles into the drift path
     trailEase: 2.9,       // how loosely the other blobs trail behind
