@@ -8,13 +8,16 @@
     maxBlobs: 7,          // hard limit (must match MAX_BLOBS in the shader)
     minBlobs: 2,
     grainPx: 3,           // size of one grain in CSS pixels (higher = coarser)
-    grainFps: 0,         // how often the grain pattern re-rolls
+    grainFps: 0,          // how often the grain pattern re-rolls (0 = still)
     grainAmount: 0.11,    // strength of the noise grain
     levels: 10,           // colour levels per channel after dithering (lower = more lo-fi)
     idleDelay: 3000,      // ms without movement before the gradient drifts on its own
     followEase: 3.2,      // how quickly the main blob catches the cursor
     idleEase: 0.9,        // how quickly it settles into the drift path
     trailEase: 1.6,       // how loosely the other blobs trail behind
+    spread: 0.06,         // how much the colours blend into each other (higher = more mixing)
+    softness: 0.7,        // 0 = tight, defined edges; 1 = soft, hazy falloff
+    wobble: 0.2,          // how much the blob outlines warp and ripple (0 = perfectly round)
   };
 
   // Ranges for the settings dialog. Values typed outside a range snap to the
@@ -32,6 +35,9 @@
     { key: 'followEase',  bank: 'Motion', name: 'Follow',   unit: '',    label: 'Cursor follow speed',   min: 0.2, max: 10,    step: 0.1 },
     { key: 'idleEase',    bank: 'Motion', name: 'Settle',   unit: '',    label: 'Drift settle speed',    min: 0.1, max: 5,     step: 0.1 },
     { key: 'trailEase',   bank: 'Motion', name: 'Trail',    unit: '',    label: 'Trail tightness',       min: 0.2, max: 6,     step: 0.1 },
+    { key: 'spread',      bank: 'Shape',  name: 'Blend',    unit: '',    label: 'Colour blend',         min: 0.01, max: 1,    step: 0.01 },
+    { key: 'softness',    bank: 'Shape',  name: 'Softness', unit: '',    label: 'Edge softness',         min: 0,   max: 1,     step: 0.01 },
+    { key: 'wobble',      bank: 'Shape',  name: 'Wobble',   unit: '',    label: 'Wobble',                min: 0,   max: 1,     step: 0.01 },
   ];
   const CONFIG_DEFAULTS = { ...CONFIG };
 
@@ -441,9 +447,73 @@
     placePanel(x, window.innerHeight - dialog.offsetHeight - 24);
   }
 
+  // ----- Resizing -----
+  // Width decides how the banks wrap; height is turned into fader length so
+  // the controls themselves grow and shrink rather than the panel scrolling.
+  const FADER_MIN = 100;
+  const FADER_MAX = 360;
+  let panelSize = null; // { w, h } once the person has resized
+
+  function bankRows() {
+    return new Set([...settingsBody.querySelectorAll('.bank')].map((b) => b.offsetTop)).size;
+  }
+
+  function minPanelWidth() {
+    const cs = getComputedStyle(dialog);
+    const chrome = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) +
+      parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+    const widestBank = Math.max(...[...settingsBody.querySelectorAll('.bank')].map((b) => b.offsetWidth));
+    return Math.ceil(widestBank + chrome);
+  }
+
+  function sizePanel(w, h) {
+    const maxW = window.innerWidth - panelPos.x - MARGIN;
+    const width = Math.max(Math.min(w, maxW), Math.min(minPanelWidth(), window.innerWidth - 2 * MARGIN));
+    dialog.style.width = `${width}px`;
+
+    // Measure everything that isn't fader, then share the rest between rows.
+    const probe = 100;
+    dialog.style.setProperty('--fader-h', `${probe}px`);
+    const rows = bankRows();
+    const other = dialog.scrollHeight - rows * probe;
+    const maxH = window.innerHeight - panelPos.y - MARGIN;
+    const fader = Math.min(FADER_MAX, Math.max(FADER_MIN, (Math.min(h, maxH) - other) / rows));
+    dialog.style.setProperty('--fader-h', `${Math.floor(fader)}px`);
+    panelSize = { w: width, h: Math.min(h, maxH) };
+  }
+
+  const resizer = document.getElementById('settings-resize');
+  let sizing = null;
+  resizer.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    sizing = { id: e.pointerId, x: e.clientX, y: e.clientY, w: dialog.offsetWidth, h: dialog.offsetHeight };
+    resizer.setPointerCapture(e.pointerId);
+    dialog.classList.add('is-resizing');
+    e.preventDefault();
+  });
+  resizer.addEventListener('pointermove', (e) => {
+    if (!sizing || sizing.id !== e.pointerId) return;
+    sizePanel(sizing.w + e.clientX - sizing.x, sizing.h + e.clientY - sizing.y);
+  });
+  const endSize = (e) => {
+    if (!sizing || sizing.id !== e.pointerId) return;
+    sizing = null;
+    dialog.classList.remove('is-resizing');
+  };
+  resizer.addEventListener('pointerup', endSize);
+  resizer.addEventListener('pointercancel', endSize);
+  resizer.addEventListener('keydown', (e) => {
+    const step = e.shiftKey ? 40 : 10;
+    const moves = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
+    if (!moves[e.key]) return;
+    e.preventDefault();
+    sizePanel(dialog.offsetWidth + moves[e.key][0], dialog.offsetHeight + moves[e.key][1]);
+  });
+
   function openPanel() {
     dialog.show(); // non-modal: the gradient stays clickable behind it
     if (!placed) { dockPanel(); placed = true; } else placePanel(panelPos.x, panelPos.y);
+    if (panelSize) { sizePanel(panelSize.w, panelSize.h); placePanel(panelPos.x, panelPos.y); }
     settingsBtn.setAttribute('aria-expanded', 'true');
     dialog.querySelector('.fader').focus({ preventScroll: true });
   }
@@ -465,7 +535,11 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && dialog.open) closePanel();
   });
-  window.addEventListener('resize', () => { if (dialog.open) placePanel(panelPos.x, panelPos.y); });
+  window.addEventListener('resize', () => {
+    if (!dialog.open) return;
+    placePanel(panelPos.x, panelPos.y);
+    if (panelSize) { sizePanel(panelSize.w, panelSize.h); placePanel(panelPos.x, panelPos.y); }
+  });
 
   const grip = document.getElementById('settings-grip');
   let drag = null;
@@ -590,12 +664,33 @@
     uniform float uFrame;
     uniform float uGrain;
     uniform float uLevels;
+    uniform float uSpread;
+    uniform float uSharp;
+    uniform float uWobble;
+    uniform float uTime;
 
     // Dave Hoskins' hash without sine: stable on mobile GPUs.
     float hash(vec2 p) {
       vec3 p3 = fract(vec3(p.xyx) * 0.1031);
       p3 += dot(p3, p3.yzx + 33.33);
       return fract((p3.x + p3.y) * p3.z);
+    }
+
+    // Smooth value noise, used to warp the blob outlines.
+    float vnoise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      vec2 u = f * f * (3.0 - 2.0 * f);
+      return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+                 mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+    }
+
+    vec2 warp(vec2 q, float t) {
+      vec2 a = vec2(vnoise(q * 1.8 + vec2(t * 0.16, 3.1)),
+                    vnoise(q * 1.8 + vec2(7.3, t * 0.14))) - 0.5;
+      vec2 b = vec2(vnoise(q * 4.1 + vec2(1.7, t * 0.27)),
+                    vnoise(q * 4.1 + vec2(t * 0.23, 9.2))) - 0.5;
+      return a + b * 0.45;
     }
 
     vec3 oklabToLinear(vec3 c) {
@@ -622,6 +717,7 @@
     void main() {
       vec2 uv = gl_FragCoord.xy / uRes;
       vec2 q = vec2(uv.x * uAspect, uv.y);
+      if (uWobble > 0.0) q += warp(q, uTime) * uWobble * 0.7;
 
       vec3 lab = vec3(0.0);
       float total = 0.0;
@@ -630,7 +726,7 @@
         vec2 b = vec2(uPos[i].x * uAspect, uPos[i].y);
         vec2 d = q - b;
         float k = dot(d, d) / (uRad[i] * uRad[i]);
-        float w = uWeight[i] / pow(k + 0.06, 1.6);
+        float w = uWeight[i] / pow(k + uSpread, uSharp);
         lab += w * uLab[i];
         total += w;
       }
@@ -684,7 +780,7 @@
   gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
   const u = {};
-  ['uRes', 'uAspect', 'uCount', 'uPos[0]', 'uLab[0]', 'uRad[0]', 'uWeight[0]', 'uFrame', 'uGrain', 'uLevels']
+  ['uRes', 'uAspect', 'uCount', 'uPos[0]', 'uLab[0]', 'uRad[0]', 'uWeight[0]', 'uFrame', 'uGrain', 'uLevels', 'uSpread', 'uSharp', 'uWobble', 'uTime']
     .forEach((name) => { u[name] = gl.getUniformLocation(program, name); });
 
   const posArr = new Float32Array(CONFIG.maxBlobs * 2);
@@ -770,6 +866,10 @@
     gl.uniform1f(u.uFrame, grainFrame);
     gl.uniform1f(u.uGrain, CONFIG.grainAmount);
     gl.uniform1f(u.uLevels, CONFIG.levels);
+    gl.uniform1f(u.uSpread, CONFIG.spread);
+    gl.uniform1f(u.uSharp, 4 - CONFIG.softness * 3.4); // softness 0..1 -> falloff 4..0.6
+    gl.uniform1f(u.uWobble, CONFIG.wobble);
+    gl.uniform1f(u.uTime, state.simTime % 3600);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
     requestAnimationFrame(frame);
