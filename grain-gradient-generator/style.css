@@ -245,7 +245,6 @@ body {
     radial-gradient(circle at 12px 12px, var(--screw) 3px, transparent 3.5px),
     radial-gradient(circle at calc(100% - 12px) 12px, var(--screw) 3px, transparent 3.5px),
     radial-gradient(circle at 12px calc(100% - 12px), var(--screw) 3px, transparent 3.5px),
-    radial-gradient(circle at calc(100% - 12px) calc(100% - 12px), var(--screw) 3px, transparent 3.5px),
     var(--panel);
   box-shadow:
     0 1px 0 1px color-mix(in srgb, var(--panel-ink) 12%, transparent),
@@ -256,6 +255,33 @@ body {
 }
 
 .panel.is-dragging { box-shadow: 0 34px 80px -20px rgb(0 0 0 / 0.65); }
+.panel.is-resizing { user-select: none; -webkit-user-select: none; }
+
+/* Bottom-right corner grip for resizing (replaces the fourth screw). */
+.panel-resize {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 26px;
+  height: 26px;
+  border-radius: 0 0 14px 0;
+  cursor: nwse-resize;
+  touch-action: none;
+  background: linear-gradient(135deg,
+    transparent 0 46%, var(--panel-ink) 46% 53%,
+    transparent 53% 64%, var(--panel-ink) 64% 71%,
+    transparent 71% 82%, var(--panel-ink) 82% 89%,
+    transparent 89%);
+  opacity: 0.55;
+  transition: opacity 140ms ease;
+}
+.panel-resize:hover,
+.panel.is-resizing .panel-resize { opacity: 1; }
+.panel-resize:focus-visible {
+  opacity: 1;
+  outline: var(--line) solid var(--panel-ink);
+  outline-offset: 2px;
+}
 
 /* Header doubles as the drag grip. */
 .panel-head {
@@ -549,6 +575,6 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .chip, .lock, .remove, .add, .gear, .hint, .lock .shackle,
-  .panel, .panel-reset, .panel-close, .panel-close:hover { transition: none; }
+  .panel, .panel-reset, .panel-close, .panel-close:hover, .panel-resize { transition: none; }
   .panel-close:hover { transform: none; }
 }
