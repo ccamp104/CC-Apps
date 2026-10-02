@@ -38,20 +38,36 @@ body {
 
 /* ---------- Colour swatches ---------- */
 
-.swatches {
-  --count: 3;
-  --chip: clamp(38px, calc((100dvh - 140px) / var(--count) - var(--gap)), 64px);
+/* The rail holds the add button, the swatches and the settings button.
+   --count is the number of chip-sized rows (swatches + the add button). */
+.rail {
+  --count: 4;
+  --chip: clamp(34px, calc((100dvh - 200px) / var(--count) - var(--gap)), 64px);
   position: fixed;
   right: var(--edge);
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--gap);
+  z-index: 2;
+}
+
+/* Centres the add and settings buttons under the chip column. */
+.rail-slot {
+  width: var(--chip);
+  display: flex;
+  justify-content: center;
+}
+
+.swatches {
   margin: 0;
   padding: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: var(--gap);
-  z-index: 2;
 }
 
 .swatch {
@@ -61,7 +77,10 @@ body {
 }
 
 .chip,
-.lock {
+.lock,
+.remove,
+.add,
+.gear {
   appearance: none;
   border: 0;
   padding: 0;
@@ -81,6 +100,8 @@ body {
   box-shadow: 0 0 0 1.5px rgb(255 255 255 / 0.55);
   transition: box-shadow 160ms ease, transform 160ms ease;
 }
+
+.chip-wrap { position: relative; }
 
 .chip:hover { transform: scale(1.06); }
 .chip:active { transform: scale(0.96); }
@@ -103,6 +124,47 @@ body {
 }
 
 .lock svg { width: 14px; height: 14px; display: block; }
+
+.remove {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 22px;
+  height: 22px;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 0 0 0 1.5px rgb(255 255 255 / 0.55);
+  opacity: 0.75;
+  transition: opacity 160ms ease;
+}
+.remove svg { width: 11px; height: 11px; display: block; }
+.remove:hover,
+.remove:focus-visible { opacity: 1; }
+.remove[hidden],
+.add[hidden] { display: none; }
+
+.add {
+  width: var(--chip);
+  height: var(--chip);
+  background: rgb(20 16 25 / 0.2);
+  color: var(--paper);
+  border: 1.5px dashed rgb(255 255 255 / 0.7);
+  transition: background 160ms ease;
+}
+.add svg { width: 40%; height: 40%; display: block; }
+.add:hover { background: rgb(20 16 25 / 0.4); }
+
+.gear {
+  width: 40px;
+  height: 40px;
+  background: rgb(20 16 25 / 0.32);
+  color: var(--paper);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 160ms ease;
+}
+.gear svg { width: 20px; height: 20px; display: block; }
+.gear:hover { background: rgb(20 16 25 / 0.55); }
 .lock .shackle { transition: transform 180ms ease; transform-origin: 16px 9px; }
 .lock[aria-pressed="false"] .shackle { transform: translateY(-2px) rotate(28deg); }
 
@@ -121,7 +183,10 @@ body {
 }
 
 .chip:focus-visible,
-.lock:focus-visible {
+.lock:focus-visible,
+.remove:focus-visible,
+.add:focus-visible,
+.gear:focus-visible {
   outline: 2px solid var(--paper);
   outline-offset: 4px;
 }
@@ -152,6 +217,49 @@ body {
 .hint.is-visible { opacity: 1; transform: translate(-50%, 0); }
 .hint.is-gone { opacity: 0; transform: translate(-50%, 4px); transition-duration: 500ms; }
 
+/* ---------- Settings dialog (deliberately plain for now) ---------- */
+
+.settings {
+  width: min(360px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 16px;
+}
+.settings::backdrop { background: rgb(0 0 0 / 0.15); }
+
+.settings-head,
+.settings-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.settings-head h2 { margin: 0; font-size: 22px; font-weight: 650; }
+.settings-foot { margin-top: 12px; }
+
+.settings button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.setting { margin-top: 12px; }
+.setting label { display: block; margin-bottom: 4px; }
+
+.setting-inputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.setting-inputs input[type="range"] { flex: 1; min-width: 0; }
+.setting-inputs input[type="text"] {
+  width: 64px;
+  font: inherit;
+  padding: 2px 6px;
+}
+
 /* ---------- Fallback and utilities ---------- */
 
 .fallback {
@@ -177,9 +285,9 @@ body {
 
 @media (max-width: 600px) {
   :root { --gap: 12px; --lock: 26px; }
-  .swatches { --chip: clamp(36px, calc((100dvh - 140px) / var(--count) - var(--gap)), 52px); }
+  .rail { --chip: clamp(32px, calc((100dvh - 200px) / var(--count) - var(--gap)), 52px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chip, .lock, .hint, .lock .shackle { transition: none; }
+  .chip, .lock, .remove, .add, .gear, .hint, .lock .shackle { transition: none; }
 }
