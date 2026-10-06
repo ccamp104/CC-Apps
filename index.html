@@ -404,6 +404,19 @@
     @keyframes flutter { from { transform: rotate(-5deg); } to { transform: rotate(6deg); } }
     .sp .glint { animation: glint 3.4s ease-in-out infinite; }
     @keyframes glint { 0%, 100% { opacity: .25; } 50% { opacity: .95; } }
+    /* Relaxed spirit: slow breathing, drifting cloak colours, rising steam */
+    .spirit .sp.relaxed { animation-duration: 7s; }
+    .sp .drift { animation: drift-0 32s ease-in-out infinite; }
+    .sp .drift-1 { animation-name: drift-1; }
+    .sp .drift-2 { animation-name: drift-2; }
+    .sp .drift-3 { animation-name: drift-3; }
+    @keyframes drift-0 { 0%, 100% { fill: #3e662a; } 25% { fill: #2f6461; } 50% { fill: #4b4372; } 75% { fill: #7a4f4a; } }
+    @keyframes drift-1 { 0%, 100% { fill: #5a8a3a; } 25% { fill: #3f817c; } 50% { fill: #62598e; } 75% { fill: #9a6560; } }
+    @keyframes drift-2 { 0%, 100% { fill: #6f9c46; } 25% { fill: #529a93; } 50% { fill: #7a70a8; } 75% { fill: #b67d72; } }
+    @keyframes drift-3 { 0%, 100% { fill: #87b05a; } 25% { fill: #6fb5ab; } 50% { fill: #968cc2; } 75% { fill: #cf998a; } }
+    .sp .steam path { animation: steam 3.2s ease-in-out infinite; }
+    .sp .steam .steam-2 { animation-delay: -1.6s; }
+    @keyframes steam { 0% { transform: translateY(2px); opacity: 0; } 35% { opacity: .85; } 100% { transform: translateY(-5px); opacity: 0; } }
     @keyframes blink { 0%, 95%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
     .sp .ears { transform-box: fill-box; transform-origin: 50% 100%; }
     .spirit.blown .ears { animation: wobble 0.7s ease-out; }
@@ -607,7 +620,7 @@
         </div>
       </a>
       
-      <a href="grain-gradient-generator/gradient-index.html" class="app-card card-gradient">
+      <a href="grain-gradient-generator/gradient-index.html" class="app-card card-gradient" data-spirit="relaxed">
         <div class="app-card-content">
           <h2>Grain Gradient Generator</h2>
           <p>Gradient generator</p>
@@ -730,7 +743,7 @@
       const has = w => (outfit || '').split(/\s+/).includes(w);
       const knight = has('knight'), staff = has('staff'), dark = has('dark');
       const dj = has('dj') || has('synth');
-      const mummy = has('mummy'), city = has('city'), armor = has('armor');
+      const mummy = has('mummy'), city = has('city'), armor = has('armor'), relaxed = has('relaxed');
       const plainBody = !mummy && !city && !armor;
 
       const left = 'M30,38 C22,38 15.5,41 14,46.5 C12,57 8.5,67 5,78 Q9,79.4 13,78.4 Q17,79.6 21,78.4 L24,78.2 C25.5,66 27.5,55 30,48Z';
@@ -791,6 +804,19 @@
             w += `<path d="${d}" stroke="${cols[row]}" stroke-width="${row === 3 ? 1.7 : 1.2}" fill="none" stroke-linecap="round"/>`;
           }
           fill = `<g class="wave-scroll">${w}</g>`;
+        } else if (relaxed) {
+          cloakBase = null; cloakEdge = 'rgba(30,40,30,.35)'; seam = 'rgba(30,40,30,.45)';
+          let n = 0;
+          for (let row = 0; row < 8; row++) {
+            const y = 37 + row * 6, off = row % 2 ? 3 : 0;
+            for (let x = 2 + off; x < 58; x += 6) {
+              const up = (row + Math.round(x / 3)) % 2 === 0;
+              const k = (n++ * 7 + row) % 4;
+              const delay = (-(x * 0.12 + y * 0.18)).toFixed(2);   // colour drifts diagonally across the cloak
+              const d = up ? `M${x},${y + 5.2} L${x + 3},${y} L${x + 6},${y + 5.2}Z` : `M${x},${y} L${x + 6},${y} L${x + 3},${y + 5.2}Z`;
+              fill += `<path class="drift drift-${k}" style="animation-delay:${delay}s" d="${d}"/>`;
+            }
+          }
         } else {
           const shades = dark ? ['#1f3719', '#29461f', '#335528', '#3f6531'] : ['#3e662a', '#5a8a3a', '#6f9c46', '#87b05a'];
           cloakBase = dark ? '#284420' : '#4f7a34';
@@ -808,7 +834,7 @@
           }
         }
         body += `<defs><clipPath id="${id}c"><path d="${left}"/><path d="${right}"/></clipPath></defs>
-          <g clip-path="url(#${id}c)"><rect x="0" y="36" width="60" height="46" fill="${cloakBase}"/>${fill}</g>
+          <g clip-path="url(#${id}c)"><rect x="0" y="36" width="60" height="46" ${cloakBase ? `fill="${cloakBase}"` : 'class="drift drift-0" style="animation-delay:-9s"'}/>${fill}</g>
           <path d="${left}" fill="none" stroke="${cloakEdge}" stroke-width="0.9"/>
           <path d="${right}" fill="none" stroke="${cloakEdge}" stroke-width="0.9"/>
           <path d="M30,48 C27.5,55 25.5,66 24,78.2 M30,48 C32.5,55 34.5,66 36,78.2" fill="none" stroke="${seam}" stroke-width="1.3"/>`;
@@ -910,6 +936,12 @@
           <ellipse cx="19" cy="18.5" rx="4" ry="1.6" fill="#e2e4df" transform="rotate(-20 19 18.5)"/>`;
         const noseY = city ? 34.3 : 31.8;
         face = `${eyes}<path d="M28.9,${noseY} L31.1,${noseY}" stroke="#7d807a" stroke-width="1.1" stroke-linecap="round"/>`;
+        if (relaxed && !sleepy) {
+          face += `<path d="M14.4,27.6 A6.6,6.6 0 0 1 27.6,27.6 Z M32.4,27.6 A6.6,6.6 0 0 1 45.6,27.6 Z" fill="#c4c8c1"/>
+            <path d="M14.6,27.6 Q21,28.6 27.4,27.6 M32.6,27.6 Q39,28.6 45.4,27.6" stroke="#4a4b46" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <path d="M27.4,34.4 Q30,36.4 32.6,34.4" stroke="#7d807a" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+            <ellipse cx="15.5" cy="34.5" rx="3" ry="1.6" fill="#e9a08a" opacity=".35"/><ellipse cx="44.5" cy="34.5" rx="3" ry="1.6" fill="#e9a08a" opacity=".35"/>`;
+        }
         if (mummy) {
           // bandages over the head, leaving a gap for the eyes
           face += `<g clip-path="url(#${id}h)">
@@ -966,6 +998,18 @@
           <path d="M44.2,45.6 C47.4,49.2 48.8,52.6 47.6,53.6" stroke="#4a78ab" stroke-width="5.2" fill="none" stroke-linecap="round"/>
           <ellipse cx="47.6" cy="52.4" rx="3" ry="3.2" fill="#c9ccc5"/>`;
       }
+      if (relaxed) {
+        extras += `
+          <g class="steam" fill="none" stroke="#eef2ea" stroke-width="1.1" stroke-linecap="round">
+            <path d="M27.8,50.5 C26.6,48.6 29,47.4 27.8,45.4"/>
+            <path class="steam-2" d="M32,50.5 C30.8,48.6 33.2,47.4 32,45.4"/>
+          </g>
+          <path d="M23.6,51.4 L36.4,51.4 L35.2,59.2 C34.6,61.4 25.4,61.4 24.8,59.2Z" fill="#d9c4a0" stroke="#a88a5c" stroke-width=".7"/>
+          <path d="M24,54 L36,54" stroke="#7fa453" stroke-width="1.6"/>
+          <ellipse cx="30" cy="51.4" rx="6.4" ry="1.3" fill="#8a5a2b"/>
+          <ellipse cx="23" cy="56.4" rx="3" ry="3.2" fill="#c9ccc5"/>
+          <ellipse cx="37" cy="56.4" rx="3" ry="3.2" fill="#c9ccc5"/>`;
+      }
       if (mummy) {
         // loose ribbon ends fluttering in the breeze
         extras += `
@@ -1000,7 +1044,7 @@
           <ellipse cx="52.6" cy="56" rx="3.3" ry="3.5" fill="#c9ccc5"/>`;
       }
 
-      return `<svg class="sp" viewBox="0 -14 60 104" aria-hidden="true">
+      return `<svg class="sp${relaxed ? ' relaxed' : ''}" viewBox="0 -14 60 104" aria-hidden="true">
         <defs>${headClip}${armor ? metal : ''}</defs>
         <ellipse cx="30" cy="88" rx="16" ry="2.4" fill="rgba(0,0,0,.3)"/>
         ${legs}
