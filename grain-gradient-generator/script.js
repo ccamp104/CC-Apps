@@ -511,6 +511,32 @@
     wantScale = applyScale(scale + dir * step);
   });
 
+  // ----- Hide / show the tools -----
+  // Hiding slides the swatch column off the right edge and closes the panel,
+  // leaving only a small arrow; showing brings both back as they were.
+  const collapseBtn = document.getElementById('collapse-tools');
+  const revealBtn = document.getElementById('reveal-tools');
+  let panelWasOpen = false;
+
+  function setToolsHidden(hide) {
+    document.body.classList.toggle('tools-hidden', hide);
+    rail.inert = hide;
+    revealBtn.hidden = !hide;
+    if (hide) {
+      panelWasOpen = dialog.open;
+      if (dialog.open) {
+        dialog.close();
+        settingsBtn.setAttribute('aria-expanded', 'false');
+      }
+      revealBtn.focus({ preventScroll: true });
+    } else {
+      if (panelWasOpen) openPanel();
+      else collapseBtn.focus({ preventScroll: true });
+    }
+  }
+  collapseBtn.addEventListener('click', () => setToolsHidden(true));
+  revealBtn.addEventListener('click', () => setToolsHidden(false));
+
   // ----- Force idle -----
   const idleSwitch = document.getElementById('idle-switch');
   function setForceIdle(on) {
