@@ -12,6 +12,7 @@
     grainAmount: 0.11,    // strength of the noise grain
     levels: 10,           // colour levels per channel after dithering (lower = more lo-fi)
     idleDelay: 3000,      // ms without movement before the gradient drifts on its own
+    idleSpeed: 1,         // how fast the idle drift and swirl move (0 = hold still)
     followEase: 3.2,      // how quickly the main blob catches the cursor
     idleEase: 0.9,        // how quickly it settles into the drift path
     trailEase: 1.6,       // how loosely the other blobs trail behind
@@ -32,6 +33,7 @@
     { key: 'grainFps',    bank: 'Grain',  name: 'Flicker',  unit: 'fps', label: 'Grain flicker',         min: 0,   max: 60,    step: 1,   int: true },
     { key: 'levels',      bank: 'Grain',  name: 'Levels',   unit: '',    label: 'Colour levels',         min: 2,   max: 12,    step: 1,   int: true },
     { key: 'idleDelay',   bank: 'Motion', name: 'Delay',    unit: 'ms',  label: 'Drift after idle',      min: 500, max: 10000, step: 100, int: true },
+    { key: 'idleSpeed',   bank: 'Motion', name: 'Wander',   unit: '',    label: 'Idle drift speed',      min: 0,   max: 5,     step: 0.05 },
     { key: 'followEase',  bank: 'Motion', name: 'Follow',   unit: '',    label: 'Cursor follow speed',   min: 0.2, max: 10,    step: 0.1 },
     { key: 'idleEase',    bank: 'Motion', name: 'Settle',   unit: '',    label: 'Drift settle speed',    min: 0.1, max: 5,     step: 0.1 },
     { key: 'trailEase',   bank: 'Motion', name: 'Trail',    unit: '',    label: 'Trail tightness',       min: 0.2, max: 6,     step: 0.1 },
@@ -105,6 +107,9 @@
     pointer: { x: 0.5, y: 0.5, seen: false, last: -Infinity },
     anchor: { x: 0.5, y: 0.5 },
     simTime: 0,
+    wanderTime: 0,
+    forceIdle: false,   // set by the Idle switch or the "i" key
+    overPanel: false,   // pointer is inside the settings panel
     hasRandomised: false,
   };
 
@@ -448,52 +453,48 @@
   }
 
   // ----- Resizing -----
-  // Width decides how the banks wrap; height is turned into fader length so
-  // the controls themselves grow and shrink rather than the panel scrolling.
-  const FADER_MIN = 100;
-  const FADER_MAX = 360;
-  let panelSize = null; // { w, h } once the person has resized
+  // The whole panel is drawn in units of --u, so resizing scales every part
+  // of it (faders, text, buttons) together rather than rearranging it.
+  const SCALE_MIN = 0.5;
+  const SCALE_MAX = 1.6;
+  const SCALE_DEFAULT = 0.8;
+  let wantScale = SCALE_DEFAULT; // what the person chose
+  let scale = SCALE_DEFAULT;     // what currently fits on screen
 
-  function bankRows() {
-    return new Set([...settingsBody.querySelectorAll('.bank')].map((b) => b.offsetTop)).size;
-  }
+  function setUnit(sv) { dialog.style.setProperty('--u', `${sv}px`); }
 
-  function minPanelWidth() {
-    const cs = getComputedStyle(dialog);
-    const chrome = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) +
-      parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
-    const widestBank = Math.max(...[...settingsBody.querySelectorAll('.bank')].map((b) => b.offsetWidth));
-    return Math.ceil(widestBank + chrome);
-  }
-
-  function sizePanel(w, h) {
-    const maxW = window.innerWidth - panelPos.x - MARGIN;
-    const width = Math.max(Math.min(w, maxW), Math.min(minPanelWidth(), window.innerWidth - 2 * MARGIN));
-    dialog.style.width = `${width}px`;
-
-    // Measure everything that isn't fader, then share the rest between rows.
-    const probe = 100;
-    dialog.style.setProperty('--fader-h', `${probe}px`);
-    const rows = bankRows();
-    const other = dialog.scrollHeight - rows * probe;
-    const maxH = window.innerHeight - panelPos.y - MARGIN;
-    const fader = Math.min(FADER_MAX, Math.max(FADER_MIN, (Math.min(h, maxH) - other) / rows));
-    dialog.style.setProperty('--fader-h', `${Math.floor(fader)}px`);
-    panelSize = { w: width, h: Math.min(h, maxH) };
+  function applyScale(target) {
+    let sv = Math.min(SCALE_MAX, Math.max(SCALE_MIN, target));
+    setUnit(sv);
+    // Shrink further if the panel would run off the screen from where it sits.
+    const availW = window.innerWidth - panelPos.x - MARGIN;
+    const availH = window.innerHeight - panelPos.y - MARGIN;
+    // Measure the full content (not the clipped box), and repeat in case the
+    // banks rewrap at the new size.
+    for (let pass = 0; pass < 3; pass++) {
+      const over = Math.max(dialog.scrollWidth / availW, dialog.scrollHeight / availH);
+      if (over <= 1.001 || sv <= SCALE_MIN) break;
+      sv = Math.max(SCALE_MIN, sv / over);
+      setUnit(sv);
+    }
+    scale = sv;
+    return sv;
   }
 
   const resizer = document.getElementById('settings-resize');
   let sizing = null;
   resizer.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
-    sizing = { id: e.pointerId, x: e.clientX, y: e.clientY, w: dialog.offsetWidth, h: dialog.offsetHeight };
+    sizing = { id: e.pointerId, x: e.clientX, y: e.clientY, w: dialog.offsetWidth, h: dialog.offsetHeight, s: scale };
     resizer.setPointerCapture(e.pointerId);
     dialog.classList.add('is-resizing');
     e.preventDefault();
   });
   resizer.addEventListener('pointermove', (e) => {
     if (!sizing || sizing.id !== e.pointerId) return;
-    sizePanel(sizing.w + e.clientX - sizing.x, sizing.h + e.clientY - sizing.y);
+    // Average the horizontal and vertical stretch so a diagonal drag feels natural.
+    const ratio = ((sizing.w + e.clientX - sizing.x) / sizing.w + (sizing.h + e.clientY - sizing.y) / sizing.h) / 2;
+    wantScale = applyScale(sizing.s * ratio);
   });
   const endSize = (e) => {
     if (!sizing || sizing.id !== e.pointerId) return;
@@ -503,17 +504,39 @@
   resizer.addEventListener('pointerup', endSize);
   resizer.addEventListener('pointercancel', endSize);
   resizer.addEventListener('keydown', (e) => {
-    const step = e.shiftKey ? 40 : 10;
-    const moves = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
-    if (!moves[e.key]) return;
+    const step = e.shiftKey ? 0.15 : 0.05;
+    const dir = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    if (!dir) return;
     e.preventDefault();
-    sizePanel(dialog.offsetWidth + moves[e.key][0], dialog.offsetHeight + moves[e.key][1]);
+    wantScale = applyScale(scale + dir * step);
+  });
+
+  // ----- Force idle -----
+  const idleSwitch = document.getElementById('idle-switch');
+  function setForceIdle(on) {
+    state.forceIdle = on;
+    idleSwitch.setAttribute('aria-checked', String(on));
+    announce(on ? 'Idle on: the blobs ignore the cursor' : 'Idle off: the blobs follow the cursor');
+  }
+  idleSwitch.addEventListener('click', () => setForceIdle(!state.forceIdle));
+  document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() !== 'i' || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.closest('input, textarea, [contenteditable]')) return;
+    e.preventDefault();
+    setForceIdle(!state.forceIdle);
   });
 
   function openPanel() {
     dialog.show(); // non-modal: the gradient stays clickable behind it
-    if (!placed) { dockPanel(); placed = true; } else placePanel(panelPos.x, panelPos.y);
-    if (panelSize) { sizePanel(panelSize.w, panelSize.h); placePanel(panelPos.x, panelPos.y); }
+    if (!placed) {
+      panelPos.x = 0; panelPos.y = 0;
+      applyScale(wantScale);
+      dockPanel();
+      placed = true;
+    } else {
+      placePanel(panelPos.x, panelPos.y);
+      applyScale(wantScale);
+    }
     settingsBtn.setAttribute('aria-expanded', 'true');
     dialog.querySelector('.fader').focus({ preventScroll: true });
   }
@@ -538,7 +561,8 @@
   window.addEventListener('resize', () => {
     if (!dialog.open) return;
     placePanel(panelPos.x, panelPos.y);
-    if (panelSize) { sizePanel(panelSize.w, panelSize.h); placePanel(panelPos.x, panelPos.y); }
+    applyScale(wantScale);
+    placePanel(panelPos.x, panelPos.y);
   });
 
   const grip = document.getElementById('settings-grip');
@@ -582,6 +606,9 @@
   });
 
   function notePointer(e) {
+    // Inside the settings panel the gradient switches to idle and ignores the cursor.
+    state.overPanel = dialog.open && dialog.contains(e.target);
+    if (state.overPanel) return;
     const uv = toUv(e);
     state.pointer.x = uv.x;
     state.pointer.y = uv.y;
@@ -604,6 +631,8 @@
     if (moved < 10) randomise();
   });
   canvas.addEventListener('pointercancel', () => { down = null; });
+  dialog.addEventListener('pointerleave', () => { state.overPanel = false; });
+  dialog.addEventListener('close', () => { state.overPanel = false; });
 
   // Keyboard: Space or Enter anywhere outside the buttons also randomises.
   document.addEventListener('keydown', (e) => {
@@ -823,8 +852,10 @@
     state.simTime += dt * motion;
     const s = state.simTime;
 
-    const idle = !state.pointer.seen || now - state.pointer.last > CONFIG.idleDelay;
-    const target = idle ? wander(s) : state.pointer;
+    state.wanderTime += dt * motion * CONFIG.idleSpeed;
+    const idle = state.forceIdle || state.overPanel || !state.pointer.seen ||
+      now - state.pointer.last > CONFIG.idleDelay;
+    const target = idle ? wander(state.wanderTime) : state.pointer;
     const k = ease(idle ? CONFIG.idleEase * motion : CONFIG.followEase, dt);
     state.anchor.x += (target.x - state.anchor.x) * k;
     state.anchor.y += (target.y - state.anchor.y) * k;
@@ -838,7 +869,7 @@
         b.x += (state.anchor.x - b.x) * pk;
         b.y += (state.anchor.y - b.y) * pk;
       } else {
-        b.theta += dt * motion * b.speed * (idle ? 1.6 : 1) * Math.PI * 2 * 0.35;
+        b.theta += dt * motion * b.speed * (idle ? 1.6 * CONFIG.idleSpeed : 1) * Math.PI * 2 * 0.35;
         const r = b.orbit * (1 + 0.28 * Math.sin(s * 0.31 + b.phase));
         const tx = state.anchor.x + (Math.cos(b.theta) * r) / aspect;
         const ty = state.anchor.y + Math.sin(b.theta) * r;
