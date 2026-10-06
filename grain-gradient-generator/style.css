@@ -219,15 +219,20 @@ body {
 
 /* ---------- Settings panel ----------
    A hardware-style mixer module. --panel and --panel-ink are set from the
-   live gradient colours in script.js; --cap is each fader's own colour. */
+   live gradient colours in script.js; --cap is each fader's own colour.
+   Every measurement is a multiple of --u, so changing --u (the resize grip)
+   scales the whole panel evenly. */
 
 .panel {
+  --u: 0.8px;
   --panel: #e9e4ee;
   --panel-ink: #141019;
-  --line: 2.5px;
-  --fader-h: 176px;
-  --channel-w: 62px;
+  --line: max(1.5px, calc(2.5 * var(--u)));
+  --fader-h: calc(176 * var(--u));
+  --channel-w: calc(62 * var(--u));
   --screw: color-mix(in srgb, var(--panel-ink) 55%, transparent);
+  --screw-r: calc(3 * var(--u));
+  --screw-at: calc(12 * var(--u));
 
   position: fixed;
   inset: auto;
@@ -237,15 +242,17 @@ body {
   max-width: calc(100vw - 24px);
   max-height: calc(100dvh - 24px);
   overflow: auto;
-  padding: 0 22px 20px;
+  padding: 0 calc(22 * var(--u)) calc(20 * var(--u));
   border: var(--line) solid var(--panel-ink);
-  border-radius: 20px;
+  border-radius: calc(20 * var(--u));
   color: var(--panel-ink);
   background:
-    radial-gradient(circle at 12px 12px, var(--screw) 3px, transparent 3.5px),
-    radial-gradient(circle at calc(100% - 12px) 12px, var(--screw) 3px, transparent 3.5px),
-    radial-gradient(circle at 12px calc(100% - 12px), var(--screw) 3px, transparent 3.5px),
-    var(--panel);
+    radial-gradient(circle at var(--screw-at) var(--screw-at), var(--screw) var(--screw-r), transparent calc(var(--screw-r) + 0.5px)),
+    radial-gradient(circle at calc(100% - var(--screw-at)) var(--screw-at), var(--screw) var(--screw-r), transparent calc(var(--screw-r) + 0.5px)),
+    radial-gradient(circle at var(--screw-at) calc(100% - var(--screw-at)), var(--screw) var(--screw-r), transparent calc(var(--screw-r) + 0.5px)),
+    color-mix(in srgb, var(--panel) 80%, transparent);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
   box-shadow:
     0 1px 0 1px color-mix(in srgb, var(--panel-ink) 12%, transparent),
     0 24px 60px -18px rgb(0 0 0 / 0.55);
@@ -260,11 +267,11 @@ body {
 /* Bottom-right corner grip for resizing (replaces the fourth screw). */
 .panel-resize {
   position: absolute;
-  right: 5px;
-  bottom: 5px;
-  width: 26px;
-  height: 26px;
-  border-radius: 0 0 14px 0;
+  right: calc(5 * var(--u));
+  bottom: calc(5 * var(--u));
+  width: max(18px, calc(26 * var(--u)));
+  height: max(18px, calc(26 * var(--u)));
+  border-radius: 0 0 calc(14 * var(--u)) 0;
   cursor: nwse-resize;
   touch-action: none;
   background: linear-gradient(135deg,
@@ -285,29 +292,23 @@ body {
 
 /* Header doubles as the drag grip. */
 .panel-head {
-  position: sticky;
-  top: 0;
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin: 0 -22px 6px;
-  padding: 16px 22px 12px;
-  background:
-    radial-gradient(circle at 12px 12px, var(--screw) 3px, transparent 3.5px),
-    radial-gradient(circle at calc(100% - 12px) 12px, var(--screw) 3px, transparent 3.5px),
-    var(--panel);
+  gap: calc(14 * var(--u));
+  margin: 0 calc(-22 * var(--u)) calc(6 * var(--u));
+  padding: calc(16 * var(--u)) calc(22 * var(--u)) calc(12 * var(--u));
   cursor: grab;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
-  border-radius: 18px 18px 0 0;
+  border-radius: calc(18 * var(--u)) calc(18 * var(--u)) 0 0;
 }
 .panel.is-dragging .panel-head { cursor: grabbing; }
-.panel-head:focus-visible { outline: var(--line) solid var(--panel-ink); outline-offset: -6px; }
+.panel-head:focus-visible { outline: var(--line) solid var(--panel-ink); outline-offset: calc(-6 * var(--u)); }
 
 .panel-head h2 {
   margin: 0;
-  font-size: 42px;
+  font-size: calc(42 * var(--u));
   font-weight: 800;
   line-height: 0.9;
   letter-spacing: -0.01em;
@@ -315,19 +316,20 @@ body {
 
 .grip-ridges {
   flex: 1;
-  min-width: 24px;
-  height: 18px;
+  min-width: calc(24 * var(--u));
+  height: calc(18 * var(--u));
   background: repeating-linear-gradient(
     90deg,
-    var(--panel-ink) 0 2px,
-    transparent 2px 7px
+    var(--panel-ink) 0 max(1px, calc(2 * var(--u))),
+    transparent max(1px, calc(2 * var(--u))) calc(7 * var(--u))
   );
   opacity: 0.35;
   border-radius: 2px;
 }
 
 .panel-reset,
-.panel-close {
+.panel-close,
+.panel-switch {
   appearance: none;
   margin: 0;
   font: inherit;
@@ -339,17 +341,17 @@ body {
 }
 
 .panel-reset {
-  height: 36px;
-  padding: 0 14px 2px;
+  height: calc(36 * var(--u));
+  padding: 0 calc(14 * var(--u)) calc(2 * var(--u));
   border-radius: 999px;
-  font-size: 18px;
+  font-size: calc(18 * var(--u));
   font-weight: 650;
 }
 .panel-reset:hover { background: var(--panel-ink); color: var(--panel); }
 
 .panel-close {
-  width: 36px;
-  height: 36px;
+  width: calc(36 * var(--u));
+  height: calc(36 * var(--u));
   padding: 0;
   border-radius: 50%;
   display: grid;
@@ -357,39 +359,74 @@ body {
   background: var(--panel-ink);
   color: var(--panel);
 }
-.panel-close svg { width: 15px; height: 15px; display: block; }
+.panel-close svg { width: calc(15 * var(--u)); height: calc(15 * var(--u)); display: block; }
 .panel-close:hover { transform: rotate(90deg); transition: transform 180ms ease; }
 
+/* Idle on/off switch. */
+.panel-switch {
+  height: calc(36 * var(--u));
+  padding: 0 calc(5 * var(--u)) 0 calc(12 * var(--u));
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  font-size: calc(18 * var(--u));
+  font-weight: 650;
+}
+.switch-label { padding-bottom: calc(2 * var(--u)); }
+.switch-track {
+  position: relative;
+  width: calc(40 * var(--u));
+  height: calc(24 * var(--u));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-ink) 22%, transparent);
+  transition: background-color 160ms ease;
+}
+.switch-knob {
+  position: absolute;
+  top: calc(3 * var(--u));
+  left: calc(3 * var(--u));
+  width: calc(18 * var(--u));
+  height: calc(18 * var(--u));
+  border-radius: 50%;
+  background: var(--panel-ink);
+  transition: transform 160ms ease, background-color 160ms ease;
+}
+.panel-switch[aria-checked="true"] .switch-track { background: var(--panel-ink); }
+.panel-switch[aria-checked="true"] .switch-knob {
+  transform: translateX(calc(16 * var(--u)));
+  background: var(--panel);
+}
+.panel-switch:hover .switch-track { box-shadow: 0 0 0 var(--line) color-mix(in srgb, var(--panel-ink) 35%, transparent); }
+
 .panel-reset:focus-visible,
-.panel-close:focus-visible {
+.panel-close:focus-visible,
+.panel-switch:focus-visible {
   outline: var(--line) solid var(--panel-ink);
-  outline-offset: 3px;
+  outline-offset: calc(3 * var(--u));
 }
 
-/* Banks sit side by side and wrap when space runs out, so new channels and
-   banks can be added without changing the layout. */
+/* Banks sit side by side and wrap only if the screen is too narrow. */
 .banks {
   display: flex;
   flex-wrap: wrap;
-  gap: 18px 28px;
+  gap: calc(18 * var(--u)) calc(28 * var(--u));
 }
 
-.bank {
-  flex: 0 0 auto;
-}
+.bank { flex: 0 0 auto; }
 
 .bank-name {
-  margin: 0 0 10px;
-  padding-bottom: 6px;
+  margin: 0 0 calc(10 * var(--u));
+  padding-bottom: calc(6 * var(--u));
   border-bottom: var(--line) solid var(--panel-ink);
-  font-size: 22px;
+  font-size: calc(22 * var(--u));
   font-weight: 800;
   line-height: 1;
 }
 
 .channels {
   display: flex;
-  gap: 8px;
+  gap: calc(8 * var(--u));
 }
 
 .channel {
@@ -405,18 +442,18 @@ body {
 /* Readout: an inset screen in the opposite tone to the chassis. */
 .readout {
   width: 100%;
-  height: 34px;
-  padding: 0 4px;
+  height: calc(34 * var(--u));
+  padding: 0 calc(4 * var(--u));
   border: 0;
-  border-radius: 7px;
+  border-radius: calc(7 * var(--u));
   background: var(--panel-ink);
   color: var(--panel);
   font-family: "Doto", "Courier New", monospace;
   font-weight: 800;
-  font-size: 19px;
+  font-size: calc(19 * var(--u));
   text-align: center;
   letter-spacing: -0.03em;
-  box-shadow: inset 0 2px 0 rgb(0 0 0 / 0.35);
+  box-shadow: inset 0 calc(2 * var(--u)) 0 rgb(0 0 0 / 0.35);
   caret-color: var(--cap);
 }
 .readout::selection { background: var(--cap); color: var(--cap-ink); }
@@ -426,11 +463,11 @@ body {
 }
 
 .unit {
-  height: 16px;
-  margin-top: 3px;
-  font-size: 13px;
+  height: calc(16 * var(--u));
+  margin-top: calc(3 * var(--u));
+  font-size: calc(13 * var(--u));
   font-weight: 650;
-  line-height: 16px;
+  line-height: calc(16 * var(--u));
   opacity: 0.7;
 }
 
@@ -438,7 +475,7 @@ body {
   position: relative;
   width: 100%;
   height: var(--fader-h);
-  margin: 4px 0 6px;
+  margin: calc(4 * var(--u)) 0 calc(6 * var(--u));
 }
 
 /* Tick marks either side of the slot, spanning the thumb's travel. */
@@ -446,25 +483,25 @@ body {
 .fader-wrap::after {
   content: "";
   position: absolute;
-  top: 11px;
-  bottom: 11px;
-  width: 9px;
-  background: linear-gradient(var(--panel-ink) 0 2px, transparent 2px) 0 0 / 100% calc((100% - 2px) / 9);
+  top: calc(11 * var(--u));
+  bottom: calc(11 * var(--u));
+  width: calc(9 * var(--u));
+  background: linear-gradient(var(--panel-ink) 0 max(1px, calc(2 * var(--u))), transparent max(1px, calc(2 * var(--u)))) 0 0 / 100% calc((100% - 2px) / 9);
   opacity: 0.4;
   pointer-events: none;
 }
-.fader-wrap::before { left: 4px; }
-.fader-wrap::after { right: 4px; }
+.fader-wrap::before { left: calc(4 * var(--u)); }
+.fader-wrap::after { right: calc(4 * var(--u)); }
 
 .slot {
   position: absolute;
   left: 50%;
-  top: 11px;
-  bottom: 11px;
-  width: 12px;
+  top: calc(11 * var(--u));
+  bottom: calc(11 * var(--u));
+  width: calc(12 * var(--u));
   transform: translateX(-50%);
   border: var(--line) solid var(--panel-ink);
-  border-radius: 7px;
+  border-radius: calc(7 * var(--u));
   background: color-mix(in srgb, var(--panel-ink) 22%, transparent);
   overflow: hidden;
   pointer-events: none;
@@ -502,25 +539,25 @@ body {
 .fader::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 44px;
-  height: 22px;
+  width: calc(44 * var(--u));
+  height: calc(22 * var(--u));
   border: var(--line) solid var(--panel-ink);
-  border-radius: 6px;
+  border-radius: calc(6 * var(--u));
   background:
-    linear-gradient(var(--cap-ink), var(--cap-ink)) center / 60% 2.5px no-repeat,
+    linear-gradient(var(--cap-ink), var(--cap-ink)) center / 60% max(1.5px, calc(2.5 * var(--u))) no-repeat,
     var(--cap);
-  box-shadow: 0 3px 0 var(--panel-ink);
+  box-shadow: 0 calc(3 * var(--u)) 0 var(--panel-ink);
   cursor: grab;
 }
 .fader::-moz-range-thumb {
-  width: 39px;
-  height: 17px;
+  width: calc(39 * var(--u));
+  height: calc(17 * var(--u));
   border: var(--line) solid var(--panel-ink);
-  border-radius: 6px;
+  border-radius: calc(6 * var(--u));
   background:
-    linear-gradient(var(--cap-ink), var(--cap-ink)) center / 60% 2.5px no-repeat,
+    linear-gradient(var(--cap-ink), var(--cap-ink)) center / 60% max(1.5px, calc(2.5 * var(--u))) no-repeat,
     var(--cap);
-  box-shadow: 0 3px 0 var(--panel-ink);
+  box-shadow: 0 calc(3 * var(--u)) 0 var(--panel-ink);
   cursor: grab;
 }
 
@@ -529,20 +566,11 @@ body {
 .fader:focus-visible::-moz-range-thumb { outline: var(--line) solid var(--panel-ink); outline-offset: 3px; }
 
 .channel-name {
-  font-size: 17px;
+  font-size: calc(17 * var(--u));
   font-weight: 650;
   line-height: 1;
   text-align: center;
   cursor: pointer;
-}
-
-@media (max-width: 720px) {
-  .panel { --fader-h: 128px; --channel-w: 56px; padding: 0 16px 16px; }
-  .panel-head { margin: 0 -16px 4px; padding: 14px 16px 10px; gap: 10px; }
-  .panel-head h2 { font-size: 34px; }
-  .bank-name { font-size: 19px; margin-bottom: 8px; }
-  .readout { font-size: 17px; height: 30px; }
-  .banks { gap: 14px 24px; justify-content: center; }
 }
 
 /* ---------- Fallback and utilities ---------- */
@@ -575,6 +603,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .chip, .lock, .remove, .add, .gear, .hint, .lock .shackle,
-  .panel, .panel-reset, .panel-close, .panel-close:hover, .panel-resize { transition: none; }
+  .panel, .panel-reset, .panel-close, .panel-close:hover, .panel-resize,
+  .panel-switch, .switch-track, .switch-knob { transition: none; }
   .panel-close:hover { transform: none; }
 }
