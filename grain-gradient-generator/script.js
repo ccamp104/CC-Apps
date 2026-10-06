@@ -13,6 +13,7 @@
     levels: 10,           // colour levels per channel after dithering (lower = more lo-fi)
     idleDelay: 3000,      // ms without movement before the gradient drifts on its own
     idleSpeed: 1,         // how fast the idle drift and swirl move (0 = hold still)
+    randomness: 0.7,      // 0 = smooth repeating loop and steady orbits; 1 = unpredictable
     followEase: 3.2,      // how quickly the main blob catches the cursor
     idleEase: 0.9,        // how quickly it settles into the drift path
     trailEase: 1.6,       // how loosely the other blobs trail behind
@@ -34,6 +35,7 @@
     { key: 'levels',      bank: 'Grain',  name: 'Levels',   unit: '',    label: 'Colour levels',         min: 2,   max: 12,    step: 1,   int: true },
     { key: 'idleDelay',   bank: 'Motion', name: 'Delay',    unit: 'ms',  label: 'Drift after idle',      min: 500, max: 10000, step: 100, int: true },
     { key: 'idleSpeed',   bank: 'Motion', name: 'Wander',   unit: '',    label: 'Idle drift speed',      min: 0,   max: 5,     step: 0.05 },
+    { key: 'randomness',  bank: 'Motion', name: 'Random',   unit: '',    label: 'Movement randomness',   min: 0,   max: 1,     step: 0.01 },
     { key: 'followEase',  bank: 'Motion', name: 'Follow',   unit: '',    label: 'Cursor follow speed',   min: 0.2, max: 10,    step: 0.1 },
     { key: 'idleEase',    bank: 'Motion', name: 'Settle',   unit: '',    label: 'Drift settle speed',    min: 0.1, max: 5,     step: 0.1 },
     { key: 'trailEase',   bank: 'Motion', name: 'Trail',    unit: '',    label: 'Trail tightness',       min: 0.2, max: 6,     step: 0.1 },
@@ -125,6 +127,7 @@
       orbit: 0.22 + Math.random() * 0.14,
       phase: Math.random() * Math.PI * 2,
       radius: 0.32 + Math.random() * 0.1,
+      seed: Math.random() * 1000, // drives this blob's irregular orbit
     };
   }
 
@@ -862,10 +865,43 @@
   const ease = (rate, dt) => 1 - Math.exp(-rate * dt);
 
   // Slow, looping drift path used when the cursor is idle.
+  // ----- Smooth 1D noise -----
+  // Random values at whole numbers, eased between them. Returns -1..1.
+  function hash1(i, seed) {
+    const v = Math.sin(i * 127.1 + seed * 311.7) * 43758.5453;
+    return (v - Math.floor(v)) * 2 - 1;
+  }
+  function noise1(t, seed) {
+    const i = Math.floor(t);
+    const f = t - i;
+    const u = f * f * f * (f * (f * 6 - 15) + 10);
+    return hash1(i, seed) + (hash1(i + 1, seed) - hash1(i, seed)) * u;
+  }
+  // Layered noise: big slow swings with smaller, quicker detail on top.
+  function fbm(t, seed) {
+    return (noise1(t, seed) + 0.5 * noise1(t * 2.03, seed + 17) + 0.25 * noise1(t * 4.01, seed + 41)) / 1.75;
+  }
+
+  const PATH_SEED = Math.random() * 1000;
+
+  // The point the main blob chases when idle. Randomness blends from a
+  // smooth repeating loop (0) to a meandering noise path that never repeats (1).
   function wander(s) {
+    const loopX = 0.5 + 0.3 * Math.sin(s * 0.21) + 0.08 * Math.sin(s * 0.53 + 1.3);
+    const loopY = 0.5 + 0.26 * Math.sin(s * 0.17 + 0.7) + 0.07 * Math.cos(s * 0.47);
+    // Two smooth layers of noise per axis; tanh keeps the path on screen
+    // while letting it reach close to the edges.
+    const n = (t, seed) => (noise1(t, seed) + 0.35 * noise1(t * 2.1, seed + 17)) / 1.35;
+    const noiseX = 0.5 + 0.44 * Math.tanh(1.9 * n(s * 0.1, PATH_SEED));
+    const noiseY = 0.5 + 0.42 * Math.tanh(1.9 * n(s * 0.1, PATH_SEED + 500));
+    // Blend the offsets from centre, then rescale so mixing the two paths
+    // doesn't shrink the drift toward the middle.
+    const r = CONFIG.randomness;
+    const keep = 1 / Math.hypot(1 - r, r);
+    const mix = (a, b) => 0.5 + ((a - 0.5) * (1 - r) + (b - 0.5) * r) * keep;
     return {
-      x: 0.5 + 0.3 * Math.sin(s * 0.21) + 0.08 * Math.sin(s * 0.53 + 1.3),
-      y: 0.5 + 0.26 * Math.sin(s * 0.17 + 0.7) + 0.07 * Math.cos(s * 0.47),
+      x: Math.min(0.95, Math.max(0.05, mix(loopX, noiseX))),
+      y: Math.min(0.95, Math.max(0.05, mix(loopY, noiseY))),
     };
   }
 
@@ -887,6 +923,10 @@
     state.anchor.y += (target.y - state.anchor.y) * k;
 
     const aspect = window.innerWidth / window.innerHeight;
+    // Orbits are sized to the screen's shorter side, so on a tall phone they
+    // don't swing across the whole width.
+    const orbitScale = Math.min(1, aspect);
+    const rnd = CONFIG.randomness;
     const trail = ease(CONFIG.trailEase * (reducedMotion ? 0.5 : 1), dt);
 
     state.blobs.forEach((b, i) => {
@@ -895,10 +935,18 @@
         b.x += (state.anchor.x - b.x) * pk;
         b.y += (state.anchor.y - b.y) * pk;
       } else {
-        b.theta += dt * motion * b.speed * (idle ? 1.6 * CONFIG.idleSpeed : 1) * Math.PI * 2 * 0.35;
-        const r = b.orbit * (1 + 0.28 * Math.sin(s * 0.31 + b.phase));
-        const tx = state.anchor.x + (Math.cos(b.theta) * r) / aspect;
-        const ty = state.anchor.y + Math.sin(b.theta) * r;
+        // With randomness, each blob's orbit speed wanders (sometimes stalling
+        // or briefly reversing), its distance breathes in and out, and it
+        // drifts slightly off the circle.
+        const nt = s * 0.17 + b.seed;
+        const speedJitter = 1 + rnd * 1.5 * fbm(nt, b.seed);
+        b.theta += dt * motion * b.speed * speedJitter * (idle ? 1.6 * CONFIG.idleSpeed : 1) * Math.PI * 2 * 0.35;
+        const breathe = (1 - rnd) * 0.28 * Math.sin(s * 0.31 + b.phase) + rnd * 0.55 * fbm(nt * 1.3, b.seed + 7);
+        const r = b.orbit * (1 + breathe) * orbitScale;
+        const jx = rnd * 0.09 * fbm(nt * 1.7, b.seed + 13) * orbitScale;
+        const jy = rnd * 0.09 * fbm(nt * 1.7, b.seed + 29) * orbitScale;
+        const tx = state.anchor.x + (Math.cos(b.theta) * r + jx) / aspect;
+        const ty = state.anchor.y + Math.sin(b.theta) * r + jy;
         b.x += (tx - b.x) * trail;
         b.y += (ty - b.y) * trail;
       }
